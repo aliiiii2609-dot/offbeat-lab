@@ -46,13 +46,14 @@
   #introline{font-size:clamp(15px,2.6vw,20px); color:var(--ink); font-weight:600; max-width:38ch; line-height:1.5}
   #introline em{color:var(--pink); font-style:normal; font-weight:700}
   #howto{font-family:var(--mono); font-size:clamp(11px,2vw,14px); color:var(--dim); line-height:1.7}
-  /* pixel aman mascot */
-  #logowrap{position:relative}
-  #heropix{position:absolute; right:-38px; top:-48px; width:clamp(66px,9vw,106px);
-    image-rendering:pixelated; transform:rotate(9deg); z-index:2;
-    filter:drop-shadow(3px 4px 0 rgba(240,20,156,.6)) drop-shadow(1px 1px 0 rgba(17,17,20,.4));
-    animation:pixbob 2.4s ease-in-out infinite}
-  @keyframes pixbob{0%,100%{transform:rotate(9deg) translateY(0)}50%{transform:rotate(4deg) translateY(-7px)}}
+  /* pixel aman mascot: framed screen beside the logo, never overlapping */
+  #logowrap{display:flex; align-items:center; justify-content:center; gap:clamp(14px,2.5vw,26px);
+    flex-wrap:wrap}
+  #heropix{width:clamp(78px,10vw,118px); height:auto; image-rendering:pixelated;
+    background:var(--panel); border:3px solid var(--ink); padding:4px;
+    box-shadow:6px 6px 0 var(--pink); transform:rotate(-3deg);
+    animation:pixbob 2.6s ease-in-out infinite}
+  @keyframes pixbob{0%,100%{transform:rotate(-3deg) translateY(0)}50%{transform:rotate(-1deg) translateY(-6px)}}
   .cardpix{position:absolute; top:6px; right:8px; width:56px; image-rendering:pixelated;
     transform:rotate(9deg); filter:drop-shadow(2px 3px 0 rgba(240,20,156,.55)); pointer-events:none}
   .card{position:relative}
@@ -308,7 +309,8 @@
     .simhint{font-size:8px}
     #wall{gap:8px}
     .fine{font-size:9.5px}
-    #heropix{width:82px; right:-14px; top:-46px}
+    #heropix{width:70px}
+    #biglogo{font-size:clamp(30px,8vw,60px)}
   }
   @media (max-height:600px){
     #intro .inner{gap:10px}
