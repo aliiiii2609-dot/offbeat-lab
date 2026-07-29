@@ -221,6 +221,7 @@
   /* ===== GLITCH DIALOG ===== */
   #dlg{position:fixed; z-index:35; width:min(92vw,400px); background:var(--panel);
     border:2px solid var(--ink); box-shadow:8px 8px 0 var(--pink);
+    max-height:84vh; overflow-y:auto; overscroll-behavior:contain;
     transform:scale(0); transition:transform .28s cubic-bezier(.34,1.9,.64,1)}
   #dlg.show{transform:scale(1) rotate(-.6deg)}
   #dlg.shakey{animation:dlgshake .35s linear}
@@ -259,15 +260,27 @@
     #raise{width:34vw}
     #raiselbl{font-size:9.5px}
     .pill{padding:6px 10px; font-size:10.5px}
-    #intro .inner{gap:15px}
+    #intro .inner{gap:13px}
     #howto{font-size:11px}
-    #startbtn,#sharkbtn{padding:16px 22px; font-size:14px}
+    #modebtns{flex-direction:column; width:min(78vw,300px); gap:12px}
+    #startbtn,#sharkbtn,#simbtn{padding:15px 18px; font-size:14px; width:100%}
     #sbtns button{padding:18px 6px}
     #sdesc{padding:0 16px; min-height:64px}
     #stitle{padding:0 12px}
     .card{padding:20px 14px}
-    .card .row button{padding:12px 14px; font-size:13.5px}
-    #dlgbody{font-size:13px}
+    .card .row{gap:8px}
+    .card .row button{padding:12px 12px; font-size:12.5px}
+    #dlgbody{font-size:13px; min-height:56px}
+    #dlgphoto{width:36%; margin:12px auto 0}
+    #dlgemoji{font-size:18px}
+    #stamp{bottom:112px; width:28vw}
+    .mlab{font-size:8px}
+    #simtext{font-size:14px; min-height:64px}
+    #simcard{padding:20px 14px 16px}
+    #simfoot{font-size:11px}
+    .simhint{font-size:8px}
+    #wall{gap:8px}
+    .fine{font-size:9.5px}
   }
   @media (max-height:600px){
     #intro .inner{gap:10px}
@@ -604,8 +617,8 @@ function stamp(src, caption, hold){
 /* wall of aman: photos visible from second zero */
 $('w1').src = PHOTOS.cheers; $('w2').src = PHOTOS.point;
 $('w3').src = PHOTOS.cake; $('w4').src = PHOTOS.kurta;
-const WALL_LINES = { cheers:'pop it when the round closes 🍾', point:'"hum bhi bana lenge" 🦈',
-  cake:'every birthday, bolder 🎂', kurta:'all white. no fear. 🥼' };
+const WALL_LINES = { cheers:'round close hote hi kholenge 🍾', point:'"hum bhi bana lenge" 🧈',
+  cake:'har birthday, aur bolder 🎂', kurta:'all white. no fear. 🥼' };
 document.querySelectorAll('.pol').forEach(b => b.addEventListener('click', () => {
   stamp(PHOTOS[b.dataset.p], WALL_LINES[b.dataset.p], 2200);
   sfx.ui();
@@ -999,11 +1012,11 @@ function startShark(){
     sharkIntroShown = true;
     setTimeout(() => {
       showDlg('AMAN_VOICE.EXE',
-        '"hum bhi bana lenge."\n\nthat is the energy. now judge\nthese pitches like a CMO.',
-        [['🦈','📈','🎧'],['📈','🦈','💪'],['🎧','📈','🦈']],
+        '"hum bhi bana lenge" 🧈\n\nekdum makkhan energy chahiye.\nab CMO ki tarah judge karo.',
+        [['🦈','🧈','🎧'],['📈','🦈','💪'],['🎧','🧈','🦈']],
         [
-          ['im ready 🦈', () => { nextPitch(); }, true],
-          ['im scared 😰', () => { toast('good. fear means stakes.'); nextPitch(); }, false],
+          ['ready hoon 🦈', () => { nextPitch(); }, true],
+          ['dar lag raha 😰', () => { toast('accha hai. dar zaroori hai.'); nextPitch(); }, false],
         ], PHOTOS.point);
       dlg.onX = nextPitch;
     }, 400);
@@ -1045,7 +1058,7 @@ function decide(choice){
   $('outbtn').disabled = true;
   const p = S.order[S.i];
   let msg = '';
-  const APPROVE = ['the CMO nods.','hum bhi bana lenge ✅','marketing approved 📈','bolder behavior detected','community would love this'];
+  const APPROVE = ['ekdum makkhan call 🧈','hum bhi bana lenge ✅','marketing approved 📈','bolder behavior detected','genZ hi ho aap toh 🔥','community isko pyaar karegi'];
   if (choice === 'in'){
     if (p.good){ S.val += p.val; S.right++; msg = '✅ ' + p.win + ' +₹' + p.val + ' Cr'; sfx.ding(); confetti(W/2, H*0.4, 16);
       stamp(PHOTOS.point, APPROVE[Math.floor(Math.random()*APPROVE.length)], 1300); }
@@ -1082,11 +1095,11 @@ function endShark(){
     if (!pmDlgShown && S.badBuys.length){
       pmDlgShown = true;
       showDlg('PORTFOLIO_MANAGER.EXE',
-        'sir. you said IM IN to\n"' + S.badBuys[0] + '".\n\nexplain yourself.',
+        'sir. aapne "' + S.badBuys[0] + '"\nko IM IN bol diya.\n\nexplain kijiye.',
         [['📉','🫠','📊'],['📊','📉','💸'],['🫠','📊','📉']],
         [
-          ['it felt right 🍚', () => toast('the audacity. respect.'), true],
-          ['fire me 🫠', () => toast('promoted instead. bolder.'), false],
+          ['dil se sahi laga 🍚', () => toast('audacity ekdum. respect.'), true],
+          ['nikaal do mujhe 🫠', () => toast('promotion mil gayi. bolder.'), false],
         ]);
     }
   }, 1500);
@@ -1132,7 +1145,7 @@ const SIM_DECK = [
   ['🧢','the intern','"boss. AI agarbatti. i already made the logo."',
     ['fund it ₹2 Cr',{C:-15,B:15}], ['gently, no',{B:-8,Z:8}]],
   ['🦈','fellow shark','"bhai, joint deal on this one? 50-50?"',
-    ['hum bhi bana lenge. solo.',{B:15,C:8,Z:-8}], ['done, partner',{C:10,B:-10}]],
+    ['hum bhi bana lenge 🧈 solo.',{B:15,C:8,Z:-8}], ['done, partner',{C:10,B:-10}]],
   ['👵','mummy ji','"beta, itna kaam mat karo."',
     ['one more meeting, promise',{B:10,Z:-15}], ['chai break with mummy',{Z:20,C:-5}]],
   ['📰','journalist','"sir. is OFF/BEAT a snack, a beverage, or a dessert?"',
@@ -1196,9 +1209,9 @@ function startSim(){
   if (!simIntroShown){
     simIntroShown = true;
     showDlg('SIMULATION.EXE',
-      'you are now aman 2.0\nfor one day.\n\ndo not embarrass the timeline.',
+      'aap ab ek din ke liye\naman 2.0 ho 🕶️\n\ntimeline ko sharminda mat karna.',
       [['🕶️','⏳','🔥'],['⏳','🕶️','💼'],['🔥','⏳','🕶️']],
-      [['bolder, lets go 🕶️', simNextCard, true]], PHOTOS.cheers);
+      [['bolder. chalo 🕶️', simNextCard, true]], PHOTOS.cheers);
     dlg.onX = simNextCard;
   } else simNextCard();
 }
@@ -1317,8 +1330,10 @@ function showDlg(title, text, emojiSets, buttons, photo){
   $('dlgtitle').textContent = title;
   if (photo){ $('dlgphoto').src = photo; $('dlgphoto').classList.remove('hidden'); }
   else $('dlgphoto').classList.add('hidden');
-  el.style.left = Math.max(8, W/2 - 200 + (Math.random()*120-60)) + 'px';
-  el.style.top = Math.max(56, H*0.13 + Math.random()*40) + 'px';
+  const dw = Math.min(W*0.92, 400);
+  const jitter = W > 700 ? (Math.random()*100-50) : 0;
+  el.style.left = Math.max(4, (W - dw)/2 + jitter) + 'px';
+  el.style.top = Math.max(50, H*(W > 700 ? 0.13 : 0.09)) + 'px';
   el.classList.remove('hidden');
   requestAnimationFrame(()=>el.classList.add('show'));
   sfx.ui();
@@ -1387,11 +1402,11 @@ setTimeout(() => {
   if (!amanDlgShown && !$('intro').classList.contains('hidden')){
     amanDlgShown = true;
     showDlg('AMAN_2.0.EXE',
-      '"still hungry. still impatient.\nstill driven."\n\n...and you? be honest.',
+      '"still hungry. still impatient.\nstill driven."\n\naur aap? sach bolo 👀',
       [['🍕','⚡','💪'],['⚡','🔥','⚡'],['💪','🍕','🔥']],
       [
-        ['still hungry 🍕', () => toast('then start running.'), true],
-        ['still sleepy 😴', () => toast('the bass will fix that.'), false],
+        ['bhookha hoon 🍕', () => toast('toh bhaago phir 🏃'), true],
+        ['neend aa rahi 😴', () => toast('bass suno. neend gayab.'), false],
       ]);
   }
 }, 7000);
@@ -1401,38 +1416,38 @@ function maybeOverDialogs(){
     if (!sharkDlgShown && G.crores >= 50){
       sharkDlgShown = true;
       showDlg('SHARK_OFFER.EXE',
-        'a shark noticed your fundraise.\noffer: ₹100 crore for 100% of\nyour running form.',
+        'ek shark ne aapki fundraise dekhi.\noffer: ₹100 crore, 100% equity.\nbolo. jaldi.',
         [['🦈','💰','📈'],['💰','🦈','💸'],['📈','💰','🦈']],
         [
-          ['accept 🤝', () => toast('deal. keep the form tho.'), true],
-          ['counter offer 😤', () => toast('bold. very off beat. respect.'), false],
+          ['done bhai 🤝', () => toast('deal. running form mat bigadna.'), true],
+          ['counter: ₹200 😤', () => toast('ekdum bolder. respect.'), false],
         ]);
     } else if (!hrDlgShown && G.crores < 10){
       hrDlgShown = true;
       showDlg('HR_OF_BORING_CORP.EXE',
-        'we noticed you tried to jump\nover our 9-5 block.\nexplain yourself immediately.',
+        'humne dekha aapne humare 9-5\nblock ke upar se koodne ki\nkoshish ki. explain kijiye. ABHI.',
         [['🚨','👔','📋'],['📋','🚨','👔'],['👔','📋','🚨']],
         [
-          ['i quit 🏃', () => toast('bolder already. run it back.'), true],
-          ['sorry sir 😔', () => toast('unacceptable. jump higher.'), false],
+          ['main resign 🏃', () => toast('ekdum bolder. wapas bhaago.'), true],
+          ['sorry sir 😔', () => toast('unacceptable. aur ooncha koodo.'), false],
         ]);
     } else if (!dripDlgShown){
       dripDlgShown = true;
       showDlg('DRIP_AUDIT.EXE',
-        'your run had 0 drip.\nattaching reference material.\nstudy it. all white. no fear.',
-        [['🥻','📸','✨'],['📸','🥻','🔍'],['✨','📸','🥻']],
+        'aapke run mein 0 drip tha.\nreference material attach hai.\ndekho aur seekho. all white. no fear.',
+        [['🥼','📸','✨'],['📸','🥼','🔍'],['✨','📸','🥼']],
         [
-          ['understood 🫡', () => toast('drip loading… please wait.'), true],
-          ['drip is inner 😌', () => toast('spoken like someone with 0 drip.'), false],
+          ['samajh gaya 🫡', () => toast('drip loading… thoda ruko.'), true],
+          ['drip andar hai 😌', () => toast('0 drip waale hi aisa bolte hain.'), false],
         ], PHOTOS.kurta);
     } else if (!liDlgShown){
       liDlgShown = true;
       showDlg('LINKEDIN_BRO.EXE',
-        'saw your run. so inspiring.\n"agree?"\n\ncan i interview you for my\npodcast (0 listeners)?',
+        'bhai aapka run dekha. inspiring!\n"agree?"\n\nmere podcast pe aaoge?\n(0 listeners, high vibes)',
         [['💼','🎙️','🤓'],['🎙️','💼','📢'],['🤓','🎙️','💼']],
         [
-          ['no 💀', () => toast('violence. earned.'), true],
-          ['only if aman comes 🤝', () => toast('now THAT is networking.'), false],
+          ['nahi 💀', () => toast('savage. deserved tha.'), true],
+          ['aman aaye toh 🤝', () => toast('ab AISE hoti hai networking.'), false],
         ]);
     }
   }, 1400);
