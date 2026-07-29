@@ -45,13 +45,44 @@
   #introline{font-size:clamp(15px,2.6vw,20px); color:var(--ink); font-weight:600; max-width:38ch; line-height:1.5}
   #introline em{color:var(--pink); font-style:normal; font-weight:700}
   #howto{font-family:var(--mono); font-size:clamp(11px,2vw,14px); color:var(--dim); line-height:1.7}
-  #startbtn{font-family:var(--disp); font-size:clamp(16px,2.6vw,22px); color:#FBF9F2;
-    background:var(--ink); border:none; padding:18px 44px; cursor:pointer;
-    letter-spacing:.02em; box-shadow:6px 6px 0 var(--pink);
+  #modebtns{display:flex; gap:16px; flex-wrap:wrap; justify-content:center}
+  #startbtn,#sharkbtn{font-family:var(--disp); font-size:clamp(15px,2.4vw,21px); cursor:pointer;
+    border:none; padding:18px 34px; letter-spacing:.02em;
     transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
-  #startbtn:hover{transform:translate(-2px,-2px)}
-  #startbtn:active{transform:translate(3px,3px)}
-  #startbtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+  #startbtn{color:#FBF9F2; background:var(--ink); box-shadow:6px 6px 0 var(--pink)}
+  #sharkbtn{color:var(--ink); background:var(--pink); box-shadow:6px 6px 0 var(--ink)}
+  #startbtn:hover,#sharkbtn:hover{transform:translate(-2px,-2px)}
+  #startbtn:active,#sharkbtn:active{transform:translate(3px,3px)}
+  #startbtn:focus-visible,#sharkbtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+
+  /* ===== SHARK MODE ===== */
+  #shark{position:fixed; inset:0; z-index:15; background:radial-gradient(90% 70% at 50% 30%, #FBF8EE 0%, #F2EFE6 70%);
+    display:flex; flex-direction:column; align-items:center; padding:max(14px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+  #sharktop{display:flex; justify-content:space-between; align-items:center; gap:8px;
+    width:min(94vw,560px); flex-wrap:wrap}
+  #sharklogo{font-family:var(--disp); font-size:clamp(12px,2vw,17px); transform:rotate(-1.2deg)}
+  #sharkstats{display:flex; gap:7px; flex-wrap:wrap}
+  #scard{background:var(--panel); border:2px solid var(--ink); box-shadow:10px 10px 0 var(--pink);
+    width:min(94vw,560px); margin:auto 0; padding:0 0 22px; text-align:center; position:relative}
+  #stimer{height:10px; background:rgba(17,17,20,.08); border-bottom:2px solid var(--ink)}
+  #stfill{height:100%; width:100%; background:repeating-linear-gradient(90deg,var(--pink) 0 8px,#FF62BE 8px 16px)}
+  #spitchno{font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.15em; margin:16px 0 4px}
+  #stitle{font-family:var(--disp); font-size:clamp(19px,4vw,30px); line-height:1.15; color:var(--ink);
+    padding:0 20px; margin:6px 0 10px; text-wrap:balance}
+  #sdesc{font-family:var(--mono); font-size:clamp(13.5px,2.4vw,16px); color:var(--dim); line-height:1.6;
+    padding:0 26px; min-height:52px}
+  #sask{margin:14px 0 2px; font-family:var(--disp); font-size:clamp(13px,2.4vw,17px); transform:rotate(-1deg)}
+  #soutcome{font-family:var(--mono); font-size:clamp(13px,2.3vw,15.5px); color:var(--ink); min-height:44px;
+    padding:10px 22px 0; line-height:1.55; font-weight:700}
+  #scard.slidein{animation:slidein .3s cubic-bezier(.34,1.6,.64,1)}
+  @keyframes slidein{from{transform:translateX(60px) rotate(1.5deg); opacity:0}to{transform:none; opacity:1}}
+  #sbtns{display:flex; gap:14px; width:min(94vw,560px); margin-top:16px}
+  #sbtns button{flex:1; font-family:var(--disp); font-size:clamp(15px,3vw,21px); padding:20px 10px;
+    cursor:pointer; border:none; transition:transform .12s}
+  #inbtn{background:var(--pink); color:var(--ink); box-shadow:6px 6px 0 var(--ink)}
+  #outbtn{background:var(--ink); color:#FBF9F2; box-shadow:6px 6px 0 var(--pink)}
+  #sbtns button:active{transform:translate(3px,3px); box-shadow:0 0 0 !important}
+  #sbtns button:disabled{opacity:.5; cursor:default}
   .fine{position:absolute; bottom:max(16px,env(safe-area-inset-bottom)); font-family:var(--mono);
     font-size:11.5px; color:rgba(17,17,20,.4); width:100%; text-align:center; padding:0 16px; line-height:1.6}
 
@@ -155,6 +186,20 @@
     #raise{width:34vw}
     #raiselbl{font-size:9.5px}
     .pill{padding:6px 10px; font-size:10.5px}
+    #intro .inner{gap:15px}
+    #howto{font-size:11px}
+    #startbtn,#sharkbtn{padding:16px 22px; font-size:14px}
+    #sbtns button{padding:18px 6px}
+    #sdesc{padding:0 16px; min-height:64px}
+    #stitle{padding:0 12px}
+    .card{padding:20px 14px}
+    .card .row button{padding:12px 14px; font-size:13.5px}
+    #dlgbody{font-size:13px}
+  }
+  @media (max-height:600px){
+    #intro .inner{gap:10px}
+    #biglogo{font-size:clamp(28px,7vw,60px)}
+    #runword{font-size:clamp(17px,4vw,30px)}
   }
   @media (prefers-reduced-motion:reduce){
     #biglogo,#judge,#toast,#lvltxt,#dlgbar .w,#dlgbody .cur,#dlg.shakey,#pitchterm .cur{animation:none; transition-duration:.01s}
@@ -174,7 +219,10 @@
     <div id="introsub">THE BOLDER RUN · FAN MADE · GLORIOUSLY UNOFFICIAL</div>
     <div id="introline">jump over everything holding india back.<br>collect <em>₹100 crore</em>. close the round.</div>
     <div id="howto">tap = jump · tap again mid-air = double jump<br>land on blocks. grab the crores. do not trip on the 9-5.</div>
-    <button id="startbtn">START RUNNING</button>
+    <div id="modebtns">
+      <button id="startbtn">🏃 THE RUN</button>
+      <button id="sharkbtn">🦈 SHARK MODE</button>
+    </div>
   </div>
   <div class="fine">a fan tribute. not affiliated with OFF/BEAT or aman gupta.<br>some grow older. some grow bolder. some are still loading.</div>
 </div>
@@ -194,6 +242,49 @@
 <div id="judge"></div>
 <div id="lvltxt"></div>
 <div id="toast"></div>
+
+<!-- SHARK MODE -->
+<div id="shark" class="hidden">
+  <div id="sharktop">
+    <div id="sharklogo" class="tag">SHARK<span class="slash">/</span>MODE</div>
+    <div id="sharkstats">
+      <span class="pill">portfolio <b id="sval">₹0 Cr</b></span>
+      <span class="pill" id="slives">🦈🦈🦈</span>
+    </div>
+  </div>
+  <div id="scard">
+    <div id="stimer"><div id="stfill"></div></div>
+    <div id="spitchno">PITCH 1 / 18</div>
+    <div id="stitle"></div>
+    <div id="sdesc"></div>
+    <span id="sask" class="tag"></span>
+    <div id="soutcome"></div>
+  </div>
+  <div id="sbtns">
+    <button id="inbtn">🤝 I'M IN</button>
+    <button id="outbtn">🚪 I'M OUT</button>
+  </div>
+</div>
+
+<!-- SHARK OVER -->
+<div class="panelbg hidden" id="sover">
+  <div class="card">
+    <h2>SHARK<span class="slash">/</span>REPORT</h2>
+    <div class="rank" id="srank"></div>
+    <div class="statgrid">
+      <div class="stat"><div class="v" id="sfval">₹0</div><div class="l">PORTFOLIO</div></div>
+      <div class="stat"><div class="v" id="sfright">0</div><div class="l">SHARP CALLS</div></div>
+      <div class="stat"><div class="v" id="sffumb">0</div><div class="l">FUMBLED 🦄</div></div>
+    </div>
+    <p id="sroast"></p>
+    <div class="row">
+      <button class="primary" id="sagain">judge again</button>
+      <button class="gold" id="spitchbtn">one more thing…</button>
+      <button id="sshare">share</button>
+      <button id="sback">menu</button>
+    </div>
+  </div>
+</div>
 
 <!-- GLITCH DIALOG -->
 <div id="dlg" class="hidden" role="dialog" aria-label="a message">
@@ -351,6 +442,7 @@ const G = {
   shake:0, lastSpawnX:0,
 };
 const R = { x:0, y:0, vy:0, w:26, h:40, onGround:true, usedDouble:false, rot:0, squash:0, legT:0 };
+R.x = W*0.26; R.y = GROUND;
 let best = store.get('best', 0);
 
 const LVL_NAMES = ['warm up','bolder','shark mode','bass overload','boAt speed','aman 2.0','beyond human'];
@@ -508,6 +600,18 @@ function stepGame(dt){
       if (R.y > top + 16){ die(o.label.replace('\n',' ')); return; }
     }
   }
+  /* hustle pay: clearing an obstacle earns ₹1 Cr */
+  for (const o of G.obstacles){
+    if (!o.passed && o.x + o.w/2 < R.x - R.w/2){
+      o.passed = true;
+      G.crores++;
+      sfx.coin(2);
+      parts.push({ kind:'txt', text:'+₹1', x:R.x + 20, y:R.y - R.h - 14, vx:0, vy:-70,
+        life:.7, t:0, r:0, c:'#F0149C' });
+      updateRaise();
+      checkMilestones();
+    }
+  }
   G.obstacles = G.obstacles.filter(o => o.x > -120);
   G.lastSpawnX = Math.max(-999, G.lastSpawnX - G.vx*dt);
   /* coins */
@@ -630,11 +734,171 @@ function stepParts(dt){
   for (let i=parts.length-1;i>=0;i--) if (parts[i].t > parts[i].life) parts.splice(i,1);
 }
 
+/* ================= SHARK MODE ================= */
+const PITCHES = [
+  {t:'uber for chai', d:'we deliver chai to your chai. chai never has to be alone again.', ask:'₹2 Cr for 1%', good:false, val:4, win:'', lose:'the chai got cold. so did the cap table.'},
+  {t:'AI that writes "just following up" emails', d:'trained on 40 million passive aggressive threads. b2b saas. 94% open rate.', ask:'₹3 Cr for 4%', good:true, val:6, win:'every corporate in india subscribed. printing.', lose:'it became the default in every inbox. you fumbled.'},
+  {t:'blockchain biryani', d:'every grain traceable on-chain. proof of dum. immutable raita.', ask:'₹5 Cr for 0.5%', good:false, val:5, win:'', lose:'the chain survived. the biryani did not.'},
+  {t:'premium himalayan air (subscription)', d:'8 litres a month. cancel anytime. breathing is a lifestyle.', ask:'₹1 Cr for 10%', good:false, val:3, win:'', lose:'customers discovered free air. brutal churn.'},
+  {t:'app that tells you if your idea is mid', d:'upload pitch. get roasted by AI in 3 seconds. gen z loves pain.', ask:'₹80 L for 6%', good:true, val:5, win:'went viral in 2 weeks. ad money everywhere.', lose:'it roasted its way to a unicorn. without you.'},
+  {t:'earbuds that translate aunty taunts', d:'real time. "beta kuch soch lo" becomes actionable feedback. audio hardware.', ask:'₹4 Cr for 3%', good:true, val:8, win:'audio + india + feelings. it exploded. 10x.', lose:'the audio guys made it huge. that one hurt.'},
+  {t:'tinder for cofounders', d:'swipe right on equity. match. build. divorce clause included.', ask:'₹2.5 Cr for 5%', good:true, val:6, win:'every founder in bangalore is on it. W.', lose:'unicorn. you saw it and said no. iconic.'},
+  {t:'NFT of your CA\'s silence', d:'mint the moment your CA stops replying in march. limited edition.', ask:'₹6 Cr for 2%', good:false, val:6, win:'', lose:'the silence was free all along.'},
+  {t:'10 second delivery', d:'we pre-live in your kitchen. groceries before you think of them.', ask:'₹15 Cr for 1%', good:false, val:8, win:'', lose:'burn rate visible from space.'},
+  {t:'app that blocks "log kya kahenge"', d:'AI detects the thought forming and plays bass until it stops.', ask:'₹1.5 Cr for 8%', good:true, val:7, win:'india needed this. therapy + bass. massive.', lose:'became a movement. you watched from the shore.'},
+  {t:'metaverse shaadi venue', d:'unlimited guests. zero caterers. pandit ji as an avatar.', ask:'₹7 Cr for 2%', good:false, val:7, win:'', lose:'the metaverse left before the baraat arrived.'},
+  {t:'protein maggi', d:'2 minutes. 30 grams protein. gym bros weep with joy.', ask:'₹3 Cr for 6%', good:true, val:7, win:'every hostel in india stocked it. monster.', lose:'it is in every gym bag now. except your portfolio.'},
+  {t:'rent-a-baraat', d:'50 dancers, 1 ghodi, unlimited energy. surge pricing in wedding season.', ask:'₹2 Cr for 7%', good:true, val:5, win:'wedding season carried the whole year. W.', lose:'they danced to the bank. without you.'},
+  {t:'AI astrologer for startups', d:'"mercury is retrograde, delay your launch." enterprise plan available.', ask:'₹4 Cr for 3%', good:false, val:4, win:'', lose:'the stars said exit. there was no exit.'},
+  {t:'bamboo reusable rocket', d:'sustainable space travel. mostly sustainable. somewhat space.', ask:'₹20 Cr for 5%', good:false, val:9, win:'', lose:'it was neither reusable nor a rocket.'},
+  {t:'startup that pays you to nap', d:'we monetise your sleep data. you literally dream for equity.', ask:'₹5 Cr for 4%', good:false, val:5, win:'', lose:'the founders were asleep too. on the job.'},
+  {t:'desi meme API', d:'plug memes into any app. latency 40ms. relatability 100%.', ask:'₹1 Cr for 5%', good:true, val:6, win:'every app in india integrated it. goldmine.', lose:'it memed its way to a 9 figure exit. oops.'},
+  {t:'gym membership NFT that judges you', d:'the token screenshots your attendance and posts it to the family group.', ask:'₹90 L for 9%', good:false, val:3, win:'', lose:'users burned the token out of shame.'},
+];
+const S = { on:false, i:0, order:[], lives:3, val:0, right:0, fumb:0, timer:null, deadline:0, dur:6000, badBuys:[] };
+const S_RANKS = [
+  [45,'MARKETING SHARK 🦈'],[32,'cap detector 9000 📡'],[22,'brand bana diya 📈'],
+  [14,'angel with trust issues 😇'],[7,'sasta shark 🪙'],[0,'im out (of money) 💸'],
+];
+const S_ROASTS = [
+  [45,'"hum bhi bana lenge" you said. and you DID.'],
+  [32,'you smell cap from three pitches away. elite nose.'],
+  [22,'solid portfolio. the linkedin post writes itself.'],
+  [14,'you invest like you text back. carefully. too carefully.'],
+  [7,'one good exit away from greatness. probably.'],
+  [0,'"mat socho, mana kardo" was advice, not a lifestyle.'],
+];
+let sharkIntroShown = false, pmDlgShown = false;
+function startShark(){
+  if (!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); }
+  if (ac.state === 'suspended') ac.resume();
+  Object.assign(S, { on:true, i:0, lives:3, val:0, right:0, fumb:0, badBuys:[] });
+  S.order = [...PITCHES].sort(() => Math.random()-0.5);
+  $('intro').classList.add('hidden');
+  $('sover').classList.add('hidden');
+  $('over').classList.add('hidden');
+  $('pitch').classList.add('hidden');
+  $('shark').classList.remove('hidden');
+  closeDlg();
+  updateSharkHud();
+  if (!sharkIntroShown){
+    sharkIntroShown = true;
+    setTimeout(() => {
+      showDlg('AMAN_VOICE.EXE',
+        '"hum bhi bana lenge."\n\nthat is the energy. now judge\nthese pitches like a CMO.',
+        [['🦈','📈','🎧'],['📈','🦈','💪'],['🎧','📈','🦈']],
+        [
+          ['im ready 🦈', () => { nextPitch(); }, true],
+          ['im scared 😰', () => { toast('good. fear means stakes.'); nextPitch(); }, false],
+        ]);
+      dlg.onX = nextPitch;
+    }, 400);
+  } else nextPitch();
+}
+function updateSharkHud(){
+  $('sval').textContent = '₹' + S.val + ' Cr';
+  $('slives').textContent = '🦈'.repeat(S.lives) + '·'.repeat(3-S.lives);
+}
+function nextPitch(){
+  if (!S.on) return;
+  if (S.i >= S.order.length || S.lives <= 0){ endShark(); return; }
+  const p = S.order[S.i];
+  $('spitchno').textContent = 'PITCH ' + (S.i+1) + ' / ' + S.order.length;
+  $('stitle').textContent = p.t;
+  $('sdesc').textContent = p.d;
+  $('sask').textContent = 'asking ' + p.ask;
+  $('soutcome').textContent = '';
+  $('inbtn').disabled = false;
+  $('outbtn').disabled = false;
+  const card = $('scard');
+  card.classList.remove('slidein'); void card.offsetWidth; card.classList.add('slidein');
+  sfx.ui();
+  S.dur = Math.max(3400, 6200 - S.i*170);
+  S.deadline = performance.now() + S.dur;
+  clearInterval(S.timer);
+  S.timer = setInterval(() => {
+    const left = S.deadline - performance.now();
+    $('stfill').style.width = Math.max(0, left/S.dur*100) + '%';
+    if (left <= 0) decide('timeout');
+  }, 50);
+}
+function decide(choice){
+  if (!S.on || $('inbtn').disabled) return;
+  clearInterval(S.timer);
+  $('inbtn').disabled = true;
+  $('outbtn').disabled = true;
+  const p = S.order[S.i];
+  let msg = '';
+  if (choice === 'in'){
+    if (p.good){ S.val += p.val; S.right++; msg = '✅ ' + p.win + ' +₹' + p.val + ' Cr'; sfx.ding(); confetti(W/2, H*0.4, 16); }
+    else { S.lives--; S.badBuys.push(p.t); msg = '💀 ' + p.lose; sfx.die(); }
+  } else if (choice === 'out'){
+    if (!p.good){ S.val += 1; S.right++; msg = '🧠 sharp. ' + p.lose + ' +₹1 Cr consulting fee'; sfx.coin(1); }
+    else { S.fumb++; msg = '😭 it became a unicorn without you. fumbled the bag.'; blipNow(300,120,0.1,0.3,'square'); }
+  } else {
+    S.lives--; msg = '⏰ you froze. sharks do not freeze.'; sfx.die();
+  }
+  $('soutcome').textContent = msg;
+  updateSharkHud();
+  S.i++;
+  setTimeout(nextPitch, 1500);
+}
+$('inbtn').addEventListener('click', () => decide('in'));
+$('outbtn').addEventListener('click', () => decide('out'));
+$('sharkbtn').addEventListener('click', startShark);
+function endShark(){
+  S.on = false;
+  clearInterval(S.timer);
+  $('shark').classList.add('hidden');
+  $('sfval').textContent = '₹' + S.val;
+  $('sfright').textContent = S.right;
+  $('sffumb').textContent = S.fumb;
+  $('srank').textContent = S_RANKS.find(r => S.val >= r[0])[1];
+  $('sroast').textContent = S_ROASTS.find(r => S.val >= r[0])[1];
+  $('sover').classList.remove('hidden');
+  setTimeout(() => {
+    if ($('sover').classList.contains('hidden')) return;
+    if (!pmDlgShown && S.badBuys.length){
+      pmDlgShown = true;
+      showDlg('PORTFOLIO_MANAGER.EXE',
+        'sir. you said IM IN to\n"' + S.badBuys[0] + '".\n\nexplain yourself.',
+        [['📉','🫠','📊'],['📊','📉','💸'],['🫠','📊','📉']],
+        [
+          ['it felt right 🍚', () => toast('the audacity. respect.'), true],
+          ['fire me 🫠', () => toast('promoted instead. bolder.'), false],
+        ]);
+    }
+  }, 1500);
+}
+$('sagain').addEventListener('click', () => { $('sover').classList.add('hidden'); startShark(); });
+$('sback').addEventListener('click', () => { $('sover').classList.add('hidden'); $('intro').classList.remove('hidden'); });
+$('spitchbtn').addEventListener('click', () => {
+  $('sover').classList.add('hidden');
+  $('pitch').classList.remove('hidden');
+  typePitch();
+});
+$('sshare').addEventListener('click', async () => {
+  const worst = S.badBuys[0];
+  const data = { title:'OFF/BEAT · SHARK MODE',
+    text:'my shark tank portfolio: ₹' + S.val + ' Cr.' + (worst ? ' i said IM IN to "' + worst + '" 💀' : ' zero bad calls. hum bhi bana lenge 🦈'),
+    url:location.href };
+  try{
+    if (navigator.share) await navigator.share(data);
+    else { await navigator.clipboard.writeText(data.text + ' ' + data.url); toast('link copied'); }
+  }catch(e){}
+});
+addEventListener('keydown', e => {
+  if (!S.on || $('shark').classList.contains('hidden')) return;
+  if (e.code === 'KeyI') decide('in');
+  if (e.code === 'KeyO') decide('out');
+});
+
 /* ================= GLITCH DIALOGS ================= */
-const dlg = { open:false, timers:[] };
+const dlg = { open:false, timers:[], onX:null };
 function showDlg(title, text, emojiSets, buttons){
   closeDlg();
   dlg.open = true;
+  dlg.onX = null;
   const el = $('dlg');
   $('dlgtitle').textContent = title;
   el.style.left = Math.max(8, W/2 - 200 + (Math.random()*120-60)) + 'px';
@@ -679,7 +943,11 @@ function closeDlg(){
   el.classList.remove('show');
   setTimeout(()=>el.classList.add('hidden'), 300);
 }
-$('dlgx').addEventListener('click', () => closeDlg());
+$('dlgx').addEventListener('click', () => {
+  const f = dlg.onX; dlg.onX = null;
+  closeDlg();
+  if (f) f();
+});
 (() => {
   const el = $('dlg'), bar = $('dlgbar');
   let dx=0, dy=0, dragging=false;
@@ -698,7 +966,7 @@ $('dlgx').addEventListener('click', () => closeDlg());
   bar.addEventListener('pointerup', () => { dragging = false; });
   bar.addEventListener('pointercancel', () => { dragging = false; });
 })();
-let amanDlgShown = false, sharkDlgShown = false, hrDlgShown = false;
+let amanDlgShown = false, sharkDlgShown = false, hrDlgShown = false, liDlgShown = false;
 setTimeout(() => {
   if (!amanDlgShown && !$('intro').classList.contains('hidden')){
     amanDlgShown = true;
@@ -731,6 +999,15 @@ function maybeOverDialogs(){
         [
           ['i quit 🏃', () => toast('bolder already. run it back.'), true],
           ['sorry sir 😔', () => toast('unacceptable. jump higher.'), false],
+        ]);
+    } else if (!liDlgShown){
+      liDlgShown = true;
+      showDlg('LINKEDIN_BRO.EXE',
+        'saw your run. so inspiring.\n"agree?"\n\ncan i interview you for my\npodcast (0 listeners)?',
+        [['💼','🎙️','🤓'],['🎙️','💼','📢'],['🤓','🎙️','💼']],
+        [
+          ['no 💀', () => toast('violence. earned.'), true],
+          ['only if aman comes 🤝', () => toast('now THAT is networking.'), false],
         ]);
     }
   }, 1400);
@@ -920,6 +1197,11 @@ function draw(dt){
     if (p.kind === 'ring'){
       cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, Math.PI*2);
       cx.strokeStyle = p.c; cx.lineWidth = 3; cx.stroke();
+    } else if (p.kind === 'txt'){
+      cx.fillStyle = p.c;
+      cx.font = '700 15px "Space Mono", monospace';
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.fillText(p.text, p.x, p.y);
     } else {
       cx.fillStyle = p.c;
       cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
