@@ -1277,7 +1277,10 @@ function startSim(){
   /* watchdog: never leave the table empty */
   const w8 = setInterval(() => {
     if (!SIM.on || SIM.day > 0){ clearInterval(w8); return; }
-    if (!dlg.open) simNextCard();
+    if (!dlg.open || $('dlg').classList.contains('hidden')){
+      if (dlg.open) closeDlg();
+      simNextCard();
+    }
   }, 1300);
 }
 function simMeters(){
@@ -1446,12 +1449,12 @@ function showDlg(title, text, emojiSets, buttons, photo){
   });
 }
 function closeDlg(){
-  if (!dlg.open){ $('dlg').classList.add('hidden'); return; }
+  if (!dlg.open){ if (!dlg.open) $('dlg').classList.add('hidden'); return; }
   dlg.open = false;
   dlg.timers.forEach(clearInterval); dlg.timers = [];
   const el = $('dlg');
   el.classList.remove('show');
-  setTimeout(()=>el.classList.add('hidden'), 300);
+  setTimeout(() => { if (!dlg.open) el.classList.add('hidden'); }, 300);
 }
 $('dlgx').addEventListener('click', () => {
   const f = dlg.onX; dlg.onX = null;
