@@ -755,7 +755,7 @@ const PITCHES = [
   {t:'desi meme API', d:'plug memes into any app. latency 40ms. relatability 100%.', ask:'₹1 Cr for 5%', good:true, val:6, win:'every app in india integrated it. goldmine.', lose:'it memed its way to a 9 figure exit. oops.'},
   {t:'gym membership NFT that judges you', d:'the token screenshots your attendance and posts it to the family group.', ask:'₹90 L for 9%', good:false, val:3, win:'', lose:'users burned the token out of shame.'},
 ];
-const S = { on:false, i:0, order:[], lives:3, val:0, right:0, fumb:0, timer:null, deadline:0, dur:6000, badBuys:[] };
+const S = { on:false, live:false, i:0, order:[], lives:3, val:0, right:0, fumb:0, timer:null, deadline:0, dur:6000, badBuys:[] };
 const S_RANKS = [
   [45,'MARKETING SHARK 🦈'],[32,'cap detector 9000 📡'],[22,'brand bana diya 📈'],
   [14,'angel with trust issues 😇'],[7,'sasta shark 🪙'],[0,'im out (of money) 💸'],
@@ -813,6 +813,7 @@ function nextPitch(){
   const card = $('scard');
   card.classList.remove('slidein'); void card.offsetWidth; card.classList.add('slidein');
   sfx.ui();
+  S.live = true;
   S.dur = Math.max(3400, 6200 - S.i*170);
   S.deadline = performance.now() + S.dur;
   clearInterval(S.timer);
@@ -823,7 +824,8 @@ function nextPitch(){
   }, 50);
 }
 function decide(choice){
-  if (!S.on || $('inbtn').disabled) return;
+  if (!S.on || !S.live || $('inbtn').disabled) return;
+  S.live = false;
   clearInterval(S.timer);
   $('inbtn').disabled = true;
   $('outbtn').disabled = true;
