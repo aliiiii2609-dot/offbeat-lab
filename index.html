@@ -1233,6 +1233,11 @@ function startSim(){
       [['shuru karo 😎', simNextCard, true]], PHOTOS.cheers);
     dlg.onX = simNextCard;
   } else simNextCard();
+  /* watchdog: never leave the table empty */
+  const w8 = setInterval(() => {
+    if (!SIM.on || SIM.day > 0){ clearInterval(w8); return; }
+    if (!dlg.open) simNextCard();
+  }, 1300);
 }
 function simMeters(){
   for (const [k, id] of [['B','B'],['C','C'],['Z','Z']]){
