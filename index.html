@@ -11,12 +11,13 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2214%22 fill=%22%23F0149C%22/><path d=%22M62 12 L38 88%22 stroke=%22%23111114%22 stroke-width=%2214%22 stroke-linecap=%22round%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#F2EFE6; --panel:#FBF9F2; --pink:#F0149C; --ink:#111114;
     --dim:rgba(17,17,20,.55); --faint:rgba(17,17,20,.14);
     --disp:'Archivo Black',sans-serif; --body:'Space Grotesk',sans-serif; --mono:'Space Mono',monospace;
+    --pxf:'Press Start 2P',monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -45,6 +46,25 @@
   #introline{font-size:clamp(15px,2.6vw,20px); color:var(--ink); font-weight:600; max-width:38ch; line-height:1.5}
   #introline em{color:var(--pink); font-style:normal; font-weight:700}
   #howto{font-family:var(--mono); font-size:clamp(11px,2vw,14px); color:var(--dim); line-height:1.7}
+  /* wall of aman */
+  #wall{display:flex; gap:12px; justify-content:center; align-items:flex-start; flex-wrap:nowrap}
+  .pol{width:clamp(62px,9vw,100px); flex:none}
+  .pol:nth-child(1){transform:rotate(-5deg)}
+  .pol:nth-child(2){transform:rotate(3deg) translateY(6px)}
+  .pol:nth-child(3){transform:rotate(-2deg)}
+  .pol:nth-child(4){transform:rotate(5deg) translateY(4px)}
+  .pol:hover{transform:scale(1.15) rotate(0deg); z-index:2}
+  .pol{transition:transform .2s cubic-bezier(.34,1.8,.64,1); cursor:pointer; border:none; background:none; padding:0}
+  .pol img{width:100%; display:block; border:3px solid var(--ink); box-shadow:4px 4px 0 var(--pink)}
+  .pol .pc{font-family:var(--pxf); font-size:7px; background:var(--pink); color:var(--ink);
+    padding:4px 2px; border:3px solid var(--ink); border-top:none; text-align:center; letter-spacing:.02em}
+
+  /* home nav */
+  #homebtn{position:fixed; top:max(56px,calc(env(safe-area-inset-top) + 44px)); left:14px; z-index:16;
+    font-family:var(--pxf); font-size:10px; padding:10px 12px; cursor:pointer;
+    background:var(--panel); color:var(--ink); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--pink)}
+  #homebtn:active{transform:translate(2px,2px); box-shadow:0 0 0}
+
   #modebtns{display:flex; gap:16px; flex-wrap:wrap; justify-content:center}
   #startbtn,#sharkbtn{font-family:var(--disp); font-size:clamp(15px,2.4vw,21px); cursor:pointer;
     border:none; padding:18px 34px; letter-spacing:.02em;
@@ -107,17 +127,18 @@
     letter-spacing:.08em}
 
   #judge{position:fixed; left:50%; top:26%; transform:translateX(-50%) scale(.5); opacity:0;
-    font-family:var(--disp); font-size:clamp(22px,4.6vw,44px); z-index:8; white-space:nowrap;
+    font-family:var(--pxf); font-size:clamp(13px,2.8vw,26px); z-index:8; white-space:nowrap;
     transition:all .16s cubic-bezier(.34,1.9,.64,1); pointer-events:none; color:var(--pink);
-    text-shadow:4px 4px 0 rgba(17,17,20,.14)}
+    text-shadow:3px 3px 0 rgba(17,17,20,.25); line-height:1.6}
   #judge.show{opacity:1; transform:translateX(-50%) scale(1)}
   #lvltxt{position:fixed; left:50%; top:17%; transform:translateX(-50%) scale(.6); opacity:0;
     font-family:var(--mono); font-size:clamp(12px,2.2vw,17px); color:var(--pink); letter-spacing:.2em;
     z-index:8; transition:all .25s cubic-bezier(.34,1.9,.64,1); pointer-events:none; font-weight:700}
   #lvltxt.show{opacity:1; transform:translateX(-50%) scale(1)}
   #toast{position:fixed; left:50%; bottom:16%; transform:translateX(-50%) scale(.6); opacity:0;
-    font-family:var(--disp); font-size:clamp(16px,3.2vw,28px); color:var(--ink); z-index:36;
-    transition:all .22s cubic-bezier(.34,1.9,.64,1); white-space:nowrap; pointer-events:none}
+    font-family:var(--pxf); font-size:clamp(11px,2.2vw,20px); color:var(--ink); z-index:36;
+    transition:all .22s cubic-bezier(.34,1.9,.64,1); white-space:nowrap; pointer-events:none;
+    text-shadow:2px 2px 0 rgba(240,20,156,.4)}
   #toast.show{opacity:1; transform:translateX(-50%) scale(1)}
 
   /* ===== CARDS ===== */
@@ -226,8 +247,13 @@
 <div id="intro">
   <div class="inner">
     <div id="biglogo" class="tag">OFF<span class="slash">/</span>BEAT</div>
-    <div id="runword">RUN</div>
-    <div id="introsub">THE BOLDER RUN · FAN MADE · GLORIOUSLY UNOFFICIAL</div>
+    <div id="introsub">THE ARCADE · FAN MADE · GLORIOUSLY UNOFFICIAL</div>
+    <div id="wall">
+      <button class="pol" data-p="cheers" data-c="the vibes"><img id="w1" alt="the vibes"><div class="pc">THE VIBES</div></button>
+      <button class="pol" data-p="point" data-c="the shark"><img id="w2" alt="the shark"><div class="pc">THE SHARK</div></button>
+      <button class="pol" data-p="cake" data-c="the cake"><img id="w3" alt="the cake"><div class="pc">THE CAKE</div></button>
+      <button class="pol" data-p="kurta" data-c="the drip"><img id="w4" alt="the drip"><div class="pc">THE DRIP</div></button>
+    </div>
     <div id="introline">jump over everything holding india back.<br>collect <em>₹100 crore</em>. close the round.</div>
     <div id="howto">tap = jump · tap again mid-air = double jump<br>land on blocks. grab the crores. do not trip on the 9-5.</div>
     <div id="modebtns">
@@ -307,6 +333,8 @@
   <div id="dlgrow"></div>
 </div>
 
+<button id="homebtn" class="hidden">⌂ MENU</button>
+
 <!-- APPROVAL POLAROID -->
 <div id="stamp"><img id="stampimg" alt="approval"><div class="cap" id="stampcap"></div></div>
 
@@ -326,6 +354,7 @@
       <button class="primary" id="again">run it back</button>
       <button class="gold" id="pitchbtn">one more thing…</button>
       <button id="sharebtn">share</button>
+      <button id="rmenu">menu</button>
     </div>
   </div>
 </div>
@@ -484,14 +513,24 @@ function stamp(src, caption, hold){
   stampT = setTimeout(()=>$('stamp').classList.remove('show'), hold || 1700);
 }
 
+/* wall of aman: photos visible from second zero */
+$('w1').src = PHOTOS.cheers; $('w2').src = PHOTOS.point;
+$('w3').src = PHOTOS.cake; $('w4').src = PHOTOS.kurta;
+const WALL_LINES = { cheers:'pop it when the round closes 🍾', point:'"hum bhi bana lenge" 🦈',
+  cake:'every birthday, bolder 🎂', kurta:'all white. no fear. 🥼' };
+document.querySelectorAll('.pol').forEach(b => b.addEventListener('click', () => {
+  stamp(PHOTOS[b.dataset.p], WALL_LINES[b.dataset.p], 2200);
+  sfx.ui();
+}));
+
 const OBSTACLE_LABELS = ['9-5','log kya\nkahenge','self\ndoubt','EMI','monday','excuses','comfort\nzone','later\nbro','boring\ncorp','fear'];
 const G = {
   on:false, dead:false, t:0, bpm:92, beatDur:60/92, nextT:0, idx:0, level:0,
   schedTimer:null, vx:340, dist:0, crores:0, runs:store.get('runs',0),
-  obstacles:[], coins:[], milestones:{}, killer:'', peakBpm:92,
-  shake:0, lastSpawnX:0,
+  obstacles:[], coins:[], powerups:[], milestones:{}, killer:'', peakBpm:92,
+  shake:0, lastSpawnX:0, fever:false, feverT:0,
 };
-const R = { x:0, y:0, vy:0, w:26, h:40, onGround:true, usedDouble:false, rot:0, squash:0, legT:0 };
+const R = { x:0, y:0, vy:0, w:30, h:46, onGround:true, usedDouble:false, rot:0, squash:0, legT:0 };
 R.x = W*0.26; R.y = GROUND;
 let best = store.get('best', 0);
 
@@ -517,8 +556,9 @@ function startGame(){
   if (!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); }
   if (ac.state === 'suspended') ac.resume();
   Object.assign(G, { on:true, dead:false, t:0, bpm:92, beatDur:60/92, idx:0, level:0,
-    vx:340, dist:0, crores:0, obstacles:[], coins:[], milestones:{}, killer:'', peakBpm:92,
-    shake:0, lastSpawnX:0 });
+    vx:340, dist:0, crores:0, obstacles:[], coins:[], powerups:[], milestones:{}, killer:'', peakBpm:92,
+    shake:0, lastSpawnX:0, fever:false, feverT:0 });
+  $('homebtn').classList.remove('hidden');
   G.runs++; store.set('runs', G.runs);
   R.x = W*0.26; R.y = GROUND; R.vy = 0; R.onGround = true; R.usedDouble = false;
   R.rot = 0; R.squash = 0;
@@ -566,6 +606,9 @@ function spawnForBeat(i){
   const lastX = G.lastSpawnX;
   const canSpawn = (W + 60) - lastX > minGap || G.obstacles.length === 0;
   if (i < 4) return;
+  if (i % 18 === 9 && Math.random() < 0.75){
+    G.powerups.push({ x: W + 90, y: GROUND - 85 - Math.random()*75, r: 15, dead:false });
+  }
   if (i % 2 === 0 && canSpawn && Math.random() < 0.72){
     const tall = G.level >= 1 && Math.random() < 0.3;
     const w = 40 + Math.random()*22;
@@ -642,14 +685,33 @@ function stepGame(dt){
   R.squash = Math.max(0, R.squash - dt*2.4);
   R.rot = R.onGround ? 0 : R.rot + dt*(R.usedDouble ? 12 : 7);
   /* obstacles */
+  /* bass mode timer */
+  if (G.fever){
+    G.feverT -= dt;
+    if (Math.random() < 0.7) parts.push({ kind:'spark', x:R.x - R.w/2, y:R.y - R.h*Math.random(),
+      vx:-120-Math.random()*80, vy:(Math.random()-0.5)*60, life:.4, t:0, r:2.5, c:'#F0149C' });
+    if (G.feverT <= 0){ G.fever = false; toast('bass over. gravity returns.'); }
+  }
   for (const o of G.obstacles){
     o.x -= G.vx*dt;
     /* side collision: hitting the wall of a block */
     const top = GROUND - o.h;
     if (R.x + R.w*0.32 > o.x - o.w/2 && R.x - R.w*0.32 < o.x + o.w/2){
-      if (R.y > top + 16){ die(o.label.replace('\n',' ')); return; }
+      if (R.y > top + 16 && !G.fever){ die(o.label.replace('\n',' ')); return; }
     }
   }
+  /* powerups */
+  for (const p of G.powerups){
+    p.x -= G.vx*dt;
+    if (!p.dead && Math.hypot(p.x - R.x, p.y - (R.y - R.h/2)) < p.r + R.w*0.7){
+      p.dead = true;
+      G.fever = true; G.feverT = 5.5;
+      judge('BASS MODE 🎧');
+      sfx.ding();
+      confetti(R.x, R.y - R.h, 20);
+    }
+  }
+  G.powerups = G.powerups.filter(p => p.x > -40 && !p.dead);
   /* hustle pay: clearing an obstacle earns ₹1 Cr */
   for (const o of G.obstacles){
     if (!o.passed && o.x + o.w/2 < R.x - R.w/2){
@@ -667,6 +729,10 @@ function stepGame(dt){
   /* coins */
   for (const c of G.coins){
     c.x -= G.vx*dt;
+    if (G.fever && Math.hypot(c.x - R.x, c.y - R.y + R.h/2) < 300){
+      c.x += (R.x - c.x)*Math.min(1, dt*6);
+      c.y += ((R.y - R.h/2) - c.y)*Math.min(1, dt*6);
+    }
     if (!c.taken && Math.abs(c.x - R.x) < c.r + R.w*0.5 && Math.abs(c.y - (R.y - R.h/2)) < c.r + R.h*0.6){
       c.taken = true;
       G.crores++;
@@ -684,17 +750,21 @@ function updateRaise(){
   $('raiselbl').textContent = 'SEED ROUND · ₹' + G.crores + ' / 100 Cr';
 }
 function checkMilestones(){
-  const M = { 25:'angel round ✅', 50:'pre-seed vibes ✅', 75:'term sheet spotted 📄', 100:'SEED ROUND CLOSED 🦈' };
-  if (M[G.crores] && !G.milestones[G.crores]){
+  const M = {
+    10:['ANGEL ROUND ✅','cheers','he sees you 👀'],
+    25:['PRE-SEED VIBES ✅','point','hum bhi bana lenge'],
+    50:['SERIES A(URA) 📄','kurta','drip checkpoint passed'],
+    75:['TERM SHEET SPOTTED 📄','cheers','glass already chilling'],
+    100:['SEED ROUND CLOSED 🦈','cake','cake unlocked. round closed.'],
+  };
+  const m = M[G.crores];
+  if (m && !G.milestones[G.crores]){
     G.milestones[G.crores] = true;
-    judge(M[G.crores]);
+    judge(m[0]);
     sfx.ding();
     confetti(R.x, R.y - R.h, G.crores === 100 ? 40 : 18);
-    if (G.crores === 50) stamp(PHOTOS.cheers, 'halfway. he sees you.');
-    if (G.crores === 100){
-      toast('bessemer has entered the chat');
-      stamp(PHOTOS.cake, 'cake unlocked. round closed.', 3000);
-    }
+    stamp(PHOTOS[m[1]], m[2], G.crores === 100 ? 3200 : 1900);
+    if (G.crores === 100) toast('bessemer has entered the chat');
   }
 }
 function die(killer){
@@ -715,6 +785,7 @@ function die(killer){
     $('rank').textContent = RANKS.find(r => G.crores >= r[0])[1];
     $('roastline').textContent = ROASTS.find(r => G.crores >= r[0])[1];
     $('raise').classList.add('hidden');
+    $('homebtn').classList.add('hidden');
     $('over').classList.remove('hidden');
     maybeOverDialogs();
   }, 900);
@@ -833,6 +904,7 @@ function startShark(){
   $('over').classList.add('hidden');
   $('pitch').classList.add('hidden');
   $('shark').classList.remove('hidden');
+  $('homebtn').classList.remove('hidden');
   closeDlg();
   updateSharkHud();
   if (!sharkIntroShown){
@@ -909,6 +981,7 @@ function endShark(){
   S.on = false;
   clearInterval(S.timer);
   $('shark').classList.add('hidden');
+  $('homebtn').classList.add('hidden');
   $('sfval').textContent = '₹' + S.val;
   $('sfright').textContent = S.right;
   $('sffumb').textContent = S.fumb;
@@ -930,8 +1003,17 @@ function endShark(){
     }
   }, 1500);
 }
+function toHome(){
+  G.on = false; G.dead = false; clearInterval(G.schedTimer);
+  S.on = false; S.live = false; clearInterval(S.timer);
+  closeDlg();
+  ['over','sover','pitch','shark','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  $('intro').classList.remove('hidden');
+}
+$('homebtn').addEventListener('click', () => { sfx.ui(); toHome(); });
+$('rmenu').addEventListener('click', toHome);
 $('sagain').addEventListener('click', () => { $('sover').classList.add('hidden'); startShark(); });
-$('sback').addEventListener('click', () => { $('sover').classList.add('hidden'); $('intro').classList.remove('hidden'); });
+$('sback').addEventListener('click', toHome);
 $('spitchbtn').addEventListener('click', () => {
   $('sover').classList.add('hidden');
   $('pitch').classList.remove('hidden');
@@ -1167,10 +1249,26 @@ function draw(dt){
   cx.fillRect(-30,-30,W+60,H+60);
   /* sky glow */
   const rg = cx.createRadialGradient(W*0.5, H*0.3, 0, W*0.5, H*0.3, Math.max(W,H)*0.7);
-  rg.addColorStop(0, 'rgba(240,20,156,'+(0.03+phase*0.04)+')');
+  rg.addColorStop(0, 'rgba(240,20,156,'+((G.fever?0.10:0.03)+phase*0.04)+')');
   rg.addColorStop(1, 'rgba(242,239,230,0)');
   cx.fillStyle = rg;
   cx.fillRect(0,0,W,H);
+  /* sun with a slash through it */
+  const sunX = W*0.8, sunY = H*0.22, sunR = Math.min(W,H)*0.085;
+  cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
+  cx.fillStyle = 'rgba(240,20,156,'+(G.fever?0.5:0.28)+')'; cx.fill();
+  cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4, sunR*0.16); cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(sunX + sunR*0.32, sunY - sunR*0.75); cx.lineTo(sunX - sunR*0.32, sunY + sunR*0.75); cx.stroke();
+  /* parallax skyline */
+  for (const [k, alpha, sp] of [[1.6, 0.05, 230], [4, 0.08, 180]]){
+    const start = Math.floor((G.dist*k)/sp);
+    for (let wi = start; wi < start + Math.ceil(W/sp) + 2; wi++){
+      const x = wi*sp - G.dist*k;
+      const h = 34 + ((wi*137) % 96);
+      cx.fillStyle = 'rgba(17,17,20,'+alpha+')';
+      cx.fillRect(x, GROUND - h, sp*0.48, h);
+    }
+  }
   /* parallax giant slashes */
   cx.save();
   const scroll = (G.dist*6) % (W*0.5);
@@ -1228,8 +1326,25 @@ function draw(dt){
     });
   }
 
+  /* powerups: floating earbud orbs */
+  for (const p of G.powerups){
+    const bob = Math.sin(performance.now()/180 + p.x/50)*4;
+    cx.beginPath(); cx.arc(p.x, p.y + bob, p.r + 3 + phase*2, 0, Math.PI*2);
+    cx.strokeStyle = 'rgba(240,20,156,.5)'; cx.lineWidth = 2; cx.stroke();
+    cx.beginPath(); cx.arc(p.x, p.y + bob, p.r, 0, Math.PI*2);
+    cx.fillStyle = '#F0149C'; cx.fill();
+    cx.strokeStyle = '#111114'; cx.lineWidth = 2.5; cx.stroke();
+    cx.font = Math.round(p.r*1.3) + 'px serif';
+    cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText('🎧', p.x, p.y + bob + 1);
+  }
+
   /* runner: the slash with shades */
   if (!G.dead || G.on){
+    if (G.fever && !G.dead){
+      cx.beginPath(); cx.arc(R.x, R.y - R.h/2, R.h*0.9, 0, Math.PI*2);
+      cx.fillStyle = 'rgba(240,20,156,'+(0.12+phase*0.08)+')'; cx.fill();
+    }
     cx.save();
     cx.translate(R.x, R.y);
     const sq = R.squash;
