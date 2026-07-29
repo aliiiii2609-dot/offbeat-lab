@@ -71,9 +71,50 @@
     transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
   #startbtn{color:#FBF9F2; background:var(--ink); box-shadow:6px 6px 0 var(--pink)}
   #sharkbtn{color:var(--ink); background:var(--pink); box-shadow:6px 6px 0 var(--ink)}
-  #startbtn:hover,#sharkbtn:hover{transform:translate(-2px,-2px)}
-  #startbtn:active,#sharkbtn:active{transform:translate(3px,3px)}
-  #startbtn:focus-visible,#sharkbtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+  #simbtn{color:var(--ink); background:var(--panel); border:3px solid var(--ink) !important;
+    box-shadow:6px 6px 0 var(--pink)}
+  #startbtn:hover,#sharkbtn:hover,#simbtn:hover{transform:translate(-2px,-2px)}
+  #startbtn:active,#sharkbtn:active,#simbtn:active{transform:translate(3px,3px)}
+  #startbtn:focus-visible,#sharkbtn:focus-visible,#simbtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+
+  /* ===== AMAN 2.0 SIM ===== */
+  #sim{position:fixed; inset:0; z-index:15; background:radial-gradient(90% 70% at 50% 30%, #FBF8EE 0%, #F2EFE6 70%);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    padding:max(14px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+  #simtop{display:flex; justify-content:space-between; align-items:center; gap:8px;
+    width:min(94vw,540px); flex-wrap:wrap}
+  #simlogo{font-family:var(--disp); font-size:clamp(12px,2vw,17px); transform:rotate(-1.2deg)}
+  #simday{font-family:var(--pxf); font-size:10px; color:var(--dim)}
+  #meters{display:flex; gap:10px; width:min(94vw,540px); justify-content:center}
+  .mrow{flex:1; max-width:170px}
+  .mlab{font-family:var(--pxf); font-size:9px; color:var(--ink); margin-bottom:4px; display:flex;
+    justify-content:space-between}
+  .mbar{height:12px; border:2px solid var(--ink); background:var(--panel)}
+  .mfill{height:100%; width:50%; background:repeating-linear-gradient(90deg,var(--pink) 0 6px,#FF62BE 6px 12px);
+    transition:width .35s}
+  .mbar.danger .mfill{background:repeating-linear-gradient(90deg,#111114 0 6px,#3a3a40 6px 12px)}
+  #simcardwrap{margin:auto 0; width:min(92vw,440px); touch-action:none}
+  #simcard{background:var(--panel); border:2px solid var(--ink); box-shadow:10px 10px 0 var(--pink);
+    padding:26px 22px 20px; text-align:center; position:relative; cursor:grab; user-select:none}
+  #simcard.grabbing{cursor:grabbing}
+  #simcard.dealin{animation:dealin .3s cubic-bezier(.34,1.6,.64,1)}
+  @keyframes dealin{from{transform:translateY(40px) rotate(3deg); opacity:0}to{opacity:1}}
+  #simavatar{font-size:clamp(44px,9vw,64px); line-height:1}
+  #simwho{font-family:var(--pxf); font-size:10px; background:var(--pink); color:var(--ink);
+    display:inline-block; padding:6px 10px; margin:12px 0 10px; transform:rotate(-1deg)}
+  #simtext{font-family:var(--mono); font-size:clamp(15px,2.6vw,18px); line-height:1.6; color:var(--ink);
+    min-height:76px}
+  .simhint{position:absolute; top:12px; font-family:var(--pxf); font-size:9px; padding:6px 8px;
+    opacity:0; transition:opacity .1s; pointer-events:none; max-width:44%; line-height:1.5}
+  #simhintL{left:12px; background:var(--ink); color:#FBF9F2}
+  #simhintR{right:12px; background:var(--pink); color:var(--ink)}
+  #simbtns{display:flex; gap:12px; width:min(92vw,440px)}
+  #simbtns button{flex:1; font-family:var(--body); font-weight:700; font-size:clamp(13px,2.4vw,15px);
+    padding:16px 10px; cursor:pointer; border:none; transition:transform .12s; line-height:1.35}
+  #simbtnL{background:var(--ink); color:#FBF9F2; box-shadow:5px 5px 0 var(--pink)}
+  #simbtnR{background:var(--pink); color:var(--ink); box-shadow:5px 5px 0 var(--ink)}
+  #simbtns button:active{transform:translate(3px,3px); box-shadow:0 0 0 !important}
+  #simfoot{font-family:var(--mono); font-size:13px; color:var(--dim)}
 
   /* ===== SHARK MODE ===== */
   #shark{position:fixed; inset:0; z-index:15; background:radial-gradient(90% 70% at 50% 30%, #FBF8EE 0%, #F2EFE6 70%);
@@ -259,6 +300,7 @@
     <div id="modebtns">
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
+      <button id="simbtn">🕶️ BE AMAN 2.0</button>
     </div>
     <div class="fine">a fan tribute. not affiliated with OFF/BEAT or aman gupta.<br>some grow older. some grow bolder. some are still loading.</div>
   </div>
@@ -300,6 +342,52 @@
   <div id="sbtns">
     <button id="inbtn">🤝 I'M IN</button>
     <button id="outbtn">🚪 I'M OUT</button>
+  </div>
+</div>
+
+<!-- AMAN 2.0 SIM -->
+<div id="sim" class="hidden">
+  <div id="simtop">
+    <div id="simlogo" class="tag">AMAN<span class="slash">/</span>2.0</div>
+    <div id="simday">MEETING 1 / 15</div>
+  </div>
+  <div id="meters">
+    <div class="mrow"><div class="mlab"><span>🔥 BOLD</span><span id="mvB">50</span></div>
+      <div class="mbar" id="mbB"><div class="mfill" id="mfB"></div></div></div>
+    <div class="mrow"><div class="mlab"><span>💰 CRORE</span><span id="mvC">50</span></div>
+      <div class="mbar" id="mbC"><div class="mfill" id="mfC"></div></div></div>
+    <div class="mrow"><div class="mlab"><span>🧘 CHILL</span><span id="mvZ">50</span></div>
+      <div class="mbar" id="mbZ"><div class="mfill" id="mfZ"></div></div></div>
+  </div>
+  <div id="simcardwrap">
+    <div id="simcard">
+      <span class="simhint" id="simhintL"></span>
+      <span class="simhint" id="simhintR"></span>
+      <div id="simavatar">👨‍💼</div>
+      <div id="simwho">the CA</div>
+      <div id="simtext"></div>
+    </div>
+  </div>
+  <div id="simbtns">
+    <button id="simbtnL"></button>
+    <button id="simbtnR"></button>
+  </div>
+  <div id="simfoot">drag the card, or tap. every choice changes the meters. 0 or 100 = doom.</div>
+</div>
+
+<!-- SIM OVER -->
+<div class="panelbg hidden" id="simover">
+  <div class="card">
+    <h2>DAY<span class="slash">/</span>REPORT</h2>
+    <div class="rank" id="simrank"></div>
+    <p id="simending"></p>
+    <p>meetings survived: <b id="simdays">0</b></p>
+    <div class="row">
+      <button class="primary" id="simagain">be bolder</button>
+      <button class="gold" id="simpitch">one more thing…</button>
+      <button id="simshare">share</button>
+      <button id="simmenu">menu</button>
+    </div>
   </div>
 </div>
 
@@ -1007,7 +1095,8 @@ function toHome(){
   G.on = false; G.dead = false; clearInterval(G.schedTimer);
   S.on = false; S.live = false; clearInterval(S.timer);
   closeDlg();
-  ['over','sover','pitch','shark','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  SIM.on = false;
+  ['over','sover','pitch','shark','sim','simover','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
   $('intro').classList.remove('hidden');
 }
 $('homebtn').addEventListener('click', () => { sfx.ui(); toHome(); });
@@ -1033,6 +1122,189 @@ addEventListener('keydown', e => {
   if (!S.on || $('shark').classList.contains('hidden')) return;
   if (e.code === 'KeyI') decide('in');
   if (e.code === 'KeyO') decide('out');
+});
+
+/* ================= AMAN 2.0 SIMULATOR ================= */
+/* card: [avatar, who, text, [Llabel,{B,C,Z}], [Rlabel,{B,C,Z}]] */
+const SIM_DECK = [
+  ['👨‍💼','the CA','"sir, the burn rate is… let me sit down first."',
+    ['cut all snacks',{C:15,Z:-12}], ['snacks ARE culture',{C:-10,Z:15}]],
+  ['🧢','the intern','"boss. AI agarbatti. i already made the logo."',
+    ['fund it ₹2 Cr',{C:-15,B:15}], ['gently, no',{B:-8,Z:8}]],
+  ['🦈','fellow shark','"bhai, joint deal on this one? 50-50?"',
+    ['hum bhi bana lenge. solo.',{B:15,C:8,Z:-8}], ['done, partner',{C:10,B:-10}]],
+  ['👵','mummy ji','"beta, itna kaam mat karo."',
+    ['one more meeting, promise',{B:10,Z:-15}], ['chai break with mummy',{Z:20,C:-5}]],
+  ['📰','journalist','"sir. is OFF/BEAT a snack, a beverage, or a dessert?"',
+    ['it stays a mystery',{B:12,Z:5}], ['leak the whole roadmap',{B:-12,C:-8}]],
+  ['🤳','influencer','"collab?? i have 900 followers. VERY engaged."',
+    ['say less. collab.',{C:-8,Z:10}], ['mat socho, mana kardo',{B:8,Z:-5}]],
+  ['💼','bessemer','"quarterly numbers, please."',
+    ['show the real deck',{C:12,Z:-10}], ['show the vibes deck',{B:15,C:-10}]],
+  ['🎧','boAthead fan','"sir i own 6 earbuds. please marry my sister."',
+    ['sign all 6 earbuds',{Z:12,B:5}], ['make him brand ambassador',{C:-10,B:10}]],
+  ['🧘','life coach','"have you tried… doing nothing?"',
+    ['block the number',{B:10,Z:-10}], ['namaste retreat weekend',{Z:18,C:-8}]],
+  ['🤖','the CTO','"the AI became sentient. it wants equity."',
+    ['give it 0.5%',{B:18,C:-10}], ['unplug it politely',{Z:8,B:-10}]],
+  ['🚗','uber driver','"sir aap shark tank wale ho na? ek pitch sunoge?"',
+    ['sunao bhai',{Z:10,C:-5,B:5}], ['5 stars and silence',{Z:-8,B:5}]],
+  ['🏦','the bank','"suspicious purchase alert: 400 bass speakers."',
+    ['not suspicious. tuesday.',{B:12,C:-12}], ['cancel the card',{C:10,Z:-5}]],
+  ['👔','your old boss','"come back to corporate. stability!"',
+    ['laugh for 45 seconds',{B:15,Z:5}], ['consider it. briefly.',{B:-15,Z:5}]],
+  ['🧃','gen z employee','"sir we need a nap pod or i quit fr fr"',
+    ['buy THREE nap pods',{C:-10,Z:12}], ['the floor is a pod',{Z:-12,B:8}]],
+  ['🥟','rival brand','"they launched earbuds shaped like samosas."',
+    ['jalebi earbuds. TONIGHT.',{B:20,C:-15}], ['let the market decide',{Z:10,B:-10}]],
+  ['📺','reality show','"judge our new show: India\'s Got Jelly?"',
+    ['is it a snack? im in.',{B:10,C:8}], ['too jiggly. im out.',{Z:8,B:-5}]],
+  ['🧾','the lawyer','"sir, someone trademarked the word \'bolder\'."',
+    ['sue with a smile',{C:-12,B:12}], ['fine. we are \'boldest\' now',{B:15,C:-5}]],
+  ['🔮','astrologer','"mercury says do not launch today."',
+    ['launch TWICE today',{B:18,Z:-10}], ['reschedule everything',{B:-12,Z:10}]],
+  ['🍕','delivery rider','"sir, your 2am pizza. again. fourth night."',
+    ['deny everything',{B:5,Z:-5}], ['tip 100%. respect.',{C:-8,Z:12}]],
+  ['🧠','mckinsey','"we made a 200 slide deck about vibes."',
+    ['pay invoice, cry later',{C:-18,Z:-8}], ['we ARE the vibes. bye.',{B:15,C:5}]],
+  ['👶','the nephew','"chachu, make me CEO."',
+    ['CEO of snacks. done.',{Z:12,C:-5}], ['earn it, beta',{B:8,Z:-5}]],
+  ['🎤','event host','"sir, 5am motivational talk tomorrow?"',
+    ['5am is for bass. no.',{Z:10,B:5}], ['im already awake. yes.',{B:12,Z:-12}]],
+];
+const SIM_GOAL = 15;
+const SIM = { on:false, day:0, deck:[], card:null, B:50, C:50, Z:50 };
+const SIM_ENDINGS = {
+  win:  ['AMAN 2.0 ACHIEVED 🕶️','you survived the full day. the timeline is proud. cake is deserved.','cake'],
+  B0:   ['TOO SAFE 💤','you played it so safe the board yawned you into early retirement.',null],
+  B100: ['TOO BOLD ☄️','you tried to disrupt gravity itself. gravity declined the meeting.','cheers'],
+  C0:   ['BROKE 📉','burn rate visible from the moon. even the chai is on EMI now.',null],
+  C100: ['TOO RICH 🧾','the auditors have entered the chat. nobody should be this liquid.','point'],
+  Z0:   ['BURNOUT 🫠','even the bass could not save you. go touch grass. slowly.',null],
+  Z100: ['TOO ZEN 🧘','you became a wellness influencer. the company forgot your name.','kurta'],
+};
+let simIntroShown = false;
+function startSim(){
+  unlockAudio();
+  Object.assign(SIM, { on:true, day:0, B:50, C:50, Z:50 });
+  SIM.deck = [...SIM_DECK].sort(() => Math.random()-0.5);
+  ['intro','over','sover','pitch','shark','simover'].forEach(id => $(id).classList.add('hidden'));
+  $('sim').classList.remove('hidden');
+  $('homebtn').classList.remove('hidden');
+  closeDlg();
+  simMeters();
+  if (!simIntroShown){
+    simIntroShown = true;
+    showDlg('SIMULATION.EXE',
+      'you are now aman 2.0\nfor one day.\n\ndo not embarrass the timeline.',
+      [['🕶️','⏳','🔥'],['⏳','🕶️','💼'],['🔥','⏳','🕶️']],
+      [['bolder, lets go 🕶️', simNextCard, true]], PHOTOS.cheers);
+    dlg.onX = simNextCard;
+  } else simNextCard();
+}
+function simMeters(){
+  for (const [k, id] of [['B','B'],['C','C'],['Z','Z']]){
+    $('mv'+id).textContent = SIM[k];
+    $('mf'+id).style.width = SIM[k] + '%';
+    $('mb'+id).classList.toggle('danger', SIM[k] <= 20 || SIM[k] >= 80);
+  }
+}
+function simNextCard(){
+  if (!SIM.on) return;
+  if (SIM.day >= SIM_GOAL){ endSim('win'); return; }
+  SIM.card = SIM.deck[SIM.day % SIM.deck.length];
+  SIM.day++;
+  $('simday').textContent = 'MEETING ' + SIM.day + ' / ' + SIM_GOAL;
+  const [av, who, txt, L, R] = SIM.card;
+  $('simavatar').textContent = av;
+  $('simwho').textContent = who;
+  $('simtext').textContent = txt;
+  $('simbtnL').textContent = L[0];
+  $('simbtnR').textContent = R[0];
+  $('simhintL').textContent = L[0];
+  $('simhintR').textContent = R[0];
+  const c = $('simcard');
+  c.style.transform = '';
+  c.classList.remove('dealin'); void c.offsetWidth; c.classList.add('dealin');
+  sfx.ui();
+}
+function chooseSim(side){
+  if (!SIM.on || !SIM.card) return;
+  const fx = SIM.card[side === 'L' ? 3 : 4][1];
+  SIM.card = null;
+  for (const k of ['B','C','Z']){
+    if (fx[k]) SIM[k] = Math.max(0, Math.min(100, SIM[k] + fx[k]));
+  }
+  simMeters();
+  sfx.coin(3);
+  confetti(W/2, H*0.45, 8);
+  for (const k of ['B','C','Z']){
+    if (SIM[k] <= 0){ endSim(k+'0'); return; }
+    if (SIM[k] >= 100){ endSim(k+'100'); return; }
+  }
+  setTimeout(simNextCard, 350);
+}
+$('simbtnL').addEventListener('click', () => chooseSim('L'));
+$('simbtnR').addEventListener('click', () => chooseSim('R'));
+$('simbtn').addEventListener('click', startSim);
+/* card dragging, reigns style */
+(() => {
+  const c = $('simcard');
+  let sx = 0, dx = 0, dragging = false;
+  c.addEventListener('pointerdown', e => {
+    dragging = true; sx = e.clientX; dx = 0;
+    c.setPointerCapture(e.pointerId);
+    c.classList.add('grabbing');
+  });
+  c.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    dx = e.clientX - sx;
+    c.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx/22) + 'deg)';
+    $('simhintL').style.opacity = Math.min(1, Math.max(0, -dx/70));
+    $('simhintR').style.opacity = Math.min(1, Math.max(0, dx/70));
+  });
+  const release = () => {
+    if (!dragging) return;
+    dragging = false;
+    c.classList.remove('grabbing');
+    $('simhintL').style.opacity = 0;
+    $('simhintR').style.opacity = 0;
+    if (dx < -80) chooseSim('L');
+    else if (dx > 80) chooseSim('R');
+    else c.style.transform = '';
+    dx = 0;
+  };
+  c.addEventListener('pointerup', release);
+  c.addEventListener('pointercancel', release);
+})();
+function endSim(key){
+  SIM.on = false;
+  const [rank, text, photo] = SIM_ENDINGS[key];
+  $('sim').classList.add('hidden');
+  $('homebtn').classList.add('hidden');
+  $('simrank').textContent = rank;
+  $('simending').textContent = text;
+  $('simdays').textContent = (key === 'win' ? SIM_GOAL : SIM.day) + ' / ' + SIM_GOAL;
+  $('simover').classList.remove('hidden');
+  if (key === 'win'){ sfx.ding(); confetti(W/2, H/2, 40); }
+  else sfx.die();
+  if (photo) stamp(PHOTOS[photo], rank.toLowerCase(), 3000);
+}
+$('simagain').addEventListener('click', () => { $('simover').classList.add('hidden'); startSim(); });
+$('simmenu').addEventListener('click', () => { $('simover').classList.add('hidden'); toHome(); });
+$('simpitch').addEventListener('click', () => {
+  $('simover').classList.add('hidden');
+  $('pitch').classList.remove('hidden');
+  typePitch();
+});
+$('simshare').addEventListener('click', async () => {
+  const data = { title:'OFF/BEAT · AMAN 2.0 SIMULATOR',
+    text:'i was aman 2.0 for ' + $('simdays').textContent.split(' ')[0] + ' meetings before: ' + $('simrank').textContent + ' 💀',
+    url:location.href };
+  try{
+    if (navigator.share) await navigator.share(data);
+    else { await navigator.clipboard.writeText(data.text + ' ' + data.url); toast('link copied'); }
+  }catch(e){}
 });
 
 /* ================= GLITCH DIALOGS ================= */
