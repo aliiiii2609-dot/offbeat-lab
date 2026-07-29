@@ -149,6 +149,9 @@
   #sharktop{display:flex; justify-content:space-between; align-items:center; gap:8px;
     width:min(94vw,560px); flex-wrap:wrap}
   #sharklogo{font-family:var(--disp); font-size:clamp(12px,2vw,17px); transform:rotate(-1.2deg)}
+  #sharkpix{width:clamp(40px,6vw,54px); height:auto; image-rendering:pixelated;
+    background:var(--panel); border:2px solid var(--ink); box-shadow:3px 3px 0 var(--pink);
+    transform:rotate(3deg)}
   #sharkstats{display:flex; gap:7px; flex-wrap:wrap}
   #scard{background:var(--panel); border:2px solid var(--ink); box-shadow:10px 10px 0 var(--pink);
     width:min(94vw,560px); margin:auto 0; padding:0 0 22px; text-align:center; position:relative}
@@ -346,7 +349,7 @@
     <div id="modebtns">
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
-      <button id="simbtn">😎 AMAN SIMULATOR</button>
+      <button id="simbtn">😎 CEO KI KURSI</button>
     </div>
     <div class="fine">a fan tribute. not affiliated with OFF/BEAT or aman gupta.<br>some grow older. some grow bolder. some are still loading.</div>
   </div>
@@ -372,6 +375,7 @@
 <div id="shark" class="hidden">
   <div id="sharktop">
     <div id="sharklogo" class="tag">SHARK<span class="slash">/</span>MODE</div>
+    <canvas id="sharkpix" width="224" height="224" aria-label="pixel aman watching"></canvas>
     <div id="sharkstats">
       <span class="pill">portfolio <b id="sval">₹0 Cr</b></span>
       <span class="pill" id="slives">🦈🦈🦈</span>
@@ -394,7 +398,7 @@
 <!-- AMAN 2.0 SIM -->
 <div id="sim" class="hidden">
   <div id="simtop">
-    <div id="simlogo" class="tag">AMAN<span class="slash">/</span>2.0</div>
+    <div id="simlogo" class="tag">CEO KI<span class="slash">/</span>KURSI</div>
     <div id="simday">MEETING 1 / 15</div>
   </div>
   <div id="meters">
@@ -406,7 +410,7 @@
       <div class="mbar" id="mbZ"><div class="mfill" id="mfZ"></div></div></div>
   </div>
   <div id="avwrap" aria-hidden="true">
-    <div id="avframe"><img id="avimg" alt="pixel aman"></div>
+    <div id="avframe"><canvas id="avimg" width="224" height="224" aria-label="pixel aman"></canvas></div>
     <div id="avlabel">AMAN 2.0</div>
   </div>
   <div id="simcardwrap">
@@ -429,7 +433,7 @@
 <div class="panelbg hidden" id="simover">
   <div class="card">
     <img class="cardpix" alt="">
-    <h2>DAY<span class="slash">/</span>REPORT</h2>
+    <h2>KURSI<span class="slash">/</span>REPORT</h2>
     <div class="rank" id="simrank"></div>
     <p id="simending"></p>
     <p>meetings survived: <b id="simdays">0</b></p>
@@ -488,6 +492,7 @@
       <div class="stat"><div class="v" id="fraise">₹0</div><div class="l">RAISED</div></div>
       <div class="stat"><div class="v" id="fdist">0m</div><div class="l">DISTANCE</div></div>
       <div class="stat"><div class="v" id="fbpm">92</div><div class="l">PEAK BPM</div></div>
+      <div class="stat"><div class="v" id="fcards">0</div><div class="l">AMAN CARDS</div></div>
     </div>
     <p>best raise <b id="fbest">₹0 Cr</b> · killed by <b id="fkiller">gravity</b></p>
     <p id="roastline"></p>
@@ -675,18 +680,16 @@ FACE_SRCS.forEach((src, i) => {
     FACES[i] = c;
     if (i === 0){
       const url = c.toDataURL('image/png');
-      const av = $('avimg'); if (av) av.src = url;
       document.querySelectorAll('.cardpix').forEach(el => el.src = url);
     }
   };
   im.src = src;
 });
-(function heroCycler(){
-  const hcv = $('heropix');
+function mountGlitch(hcv, HOLD){
   if (!hcv) return;
   const hg = hcv.getContext('2d');
   let idx = 0, next = 0, mode = 'idle', swapT = performance.now(), glitchT = 0;
-  const HOLD = 2600, GLITCH = 420;
+  const GLITCH = 420;
   function pickNext(){
     const ready = FACES.map((f,i)=>f?i:-1).filter(i=>i>=0);
     if (ready.length < 2) return idx;
@@ -739,7 +742,10 @@ FACE_SRCS.forEach((src, i) => {
     }
   }
   loop();
-})();
+}
+mountGlitch($('heropix'), 2600);
+mountGlitch($('avimg'), 3000);
+mountGlitch($('sharkpix'), 2200);
 
 /* wall of aman: photos visible from second zero */
 $('w1').src = PHOTOS.cheers; $('w2').src = PHOTOS.point;
@@ -755,7 +761,7 @@ const OBSTACLE_LABELS = ['9-5','log kya\nkahenge','self\ndoubt','EMI','monday','
 const G = {
   on:false, dead:false, t:0, bpm:92, beatDur:60/92, nextT:0, idx:0, level:0,
   schedTimer:null, vx:340, dist:0, crores:0, runs:store.get('runs',0),
-  obstacles:[], coins:[], powerups:[], milestones:{}, killer:'', peakBpm:92,
+  obstacles:[], coins:[], powerups:[], faces:[], facesGot:0, milestones:{}, killer:'', peakBpm:92,
   shake:0, lastSpawnX:0, fever:false, feverT:0,
 };
 const R = { x:0, y:0, vy:0, w:30, h:46, onGround:true, usedDouble:false, rot:0, squash:0, legT:0 };
@@ -784,8 +790,8 @@ function startGame(){
   if (!ac){ ac = new (window.AudioContext||window.webkitAudioContext)(); }
   if (ac.state === 'suspended') ac.resume();
   Object.assign(G, { on:true, dead:false, t:0, bpm:92, beatDur:60/92, idx:0, level:0,
-    vx:340, dist:0, crores:0, obstacles:[], coins:[], powerups:[], milestones:{}, killer:'', peakBpm:92,
-    shake:0, lastSpawnX:0, fever:false, feverT:0 });
+    vx:340, dist:0, crores:0, obstacles:[], coins:[], powerups:[], faces:[], facesGot:0,
+    milestones:{}, killer:'', peakBpm:92, shake:0, lastSpawnX:0, fever:false, feverT:0 });
   $('homebtn').classList.remove('hidden');
   G.runs++; store.set('runs', G.runs);
   R.x = W*0.26; R.y = GROUND; R.vy = 0; R.onGround = true; R.usedDouble = false;
@@ -836,6 +842,13 @@ function spawnForBeat(i){
   if (i < 4) return;
   if (i % 18 === 9 && Math.random() < 0.75){
     G.powerups.push({ x: W + 90, y: GROUND - 85 - Math.random()*75, r: 15, dead:false });
+  }
+  if (i % 22 === 15 && Math.random() < 0.65){
+    const ready = FACES.map((f,fi)=>f?fi:-1).filter(fi=>fi>=0);
+    if (ready.length){
+      G.faces.push({ x: W + 70, y: GROUND - 95 - Math.random()*85, r: 16,
+        fi: ready[Math.floor(Math.random()*ready.length)], dead:false });
+    }
   }
   if (i % 2 === 0 && canSpawn && Math.random() < 0.72){
     const tall = G.level >= 1 && Math.random() < 0.3;
@@ -940,6 +953,22 @@ function stepGame(dt){
     }
   }
   G.powerups = G.powerups.filter(p => p.x > -40 && !p.dead);
+  /* collectible aman cards */
+  for (const f of G.faces){
+    f.x -= G.vx*dt;
+    if (!f.dead && Math.hypot(f.x - R.x, f.y - (R.y - R.h/2)) < f.r + R.w*0.7){
+      f.dead = true;
+      G.facesGot++;
+      G.crores += 5;
+      sfx.ding();
+      parts.push({ kind:'txt', text:'+₹5 aman card', x:f.x, y:f.y - 18, vx:0, vy:-70,
+        life:.8, t:0, r:0, c:'#F0149C' });
+      coinPop(f.x, f.y);
+      updateRaise();
+      checkMilestones();
+    }
+  }
+  G.faces = G.faces.filter(f => f.x > -50 && !f.dead);
   /* hustle pay: clearing an obstacle earns ₹1 Cr */
   for (const o of G.obstacles){
     if (!o.passed && o.x + o.w/2 < R.x - R.w/2){
@@ -991,7 +1020,6 @@ function checkMilestones(){
     judge(m[0]);
     sfx.ding();
     confetti(R.x, R.y - R.h, G.crores === 100 ? 40 : 18);
-    stamp(PHOTOS[m[1]], m[2], G.crores === 100 ? 3200 : 1900);
     if (G.crores === 100) toast('bessemer has entered the chat');
   }
 }
@@ -1008,6 +1036,7 @@ function die(killer){
     $('fraise').textContent = '₹' + G.crores;
     $('fdist').textContent = Math.floor(G.dist) + 'm';
     $('fbpm').textContent = G.peakBpm;
+    $('fcards').textContent = G.facesGot;
     $('fbest').textContent = '₹' + best + ' Cr';
     $('fkiller').textContent = killer;
     $('rank').textContent = RANKS.find(r => G.crores >= r[0])[1];
@@ -1336,8 +1365,8 @@ function startSim(){
   setAvatar('n');
   if (!simIntroShown){
     simIntroShown = true;
-    showDlg('SIMULATION.EXE',
-      'aman 2.0 simulator loaded 😎\n\nboldest chair. boldest din.\nmeters sambhalo, timeline chamkao.',
+    showDlg('KURSI.EXE',
+      'CEO ki kursi ready hai 😎\n\nboldest chair. boldest din.\nmeters sambhalo, timeline chamkao.',
       [['😎','⏳','🔥'],['⏳','😎','💼'],['🔥','⏳','😎']],
       [['shuru karo 😎', simNextCard, true]], PHOTOS.cheers);
     dlg.onX = simNextCard;
@@ -1461,8 +1490,8 @@ $('simpitch').addEventListener('click', () => {
   typePitch();
 });
 $('simshare').addEventListener('click', async () => {
-  const data = { title:'OFF/BEAT · AMAN 2.0 SIMULATOR',
-    text:'i was aman 2.0 for ' + $('simdays').textContent.split(' ')[0] + ' meetings before: ' + $('simrank').textContent + ' 💀',
+  const data = { title:'OFF/BEAT · CEO KI KURSI',
+    text:'CEO ki kursi pe baitha for ' + $('simdays').textContent.split(' ')[0] + ' meetings. ending: ' + $('simrank').textContent + ' 💀',
     url:location.href };
   try{
     if (navigator.share) await navigator.share(data);
@@ -1761,6 +1790,22 @@ function draw(dt){
     lines.forEach((ln, li) => {
       cx.fillText(ln, o.x, top + o.h/2 + (li - (lines.length-1)/2)*12);
     });
+  }
+
+  /* collectible aman cards: tiny pixel faces */
+  if (G.faces.length){
+    cx.imageSmoothingEnabled = false;
+    for (const f of G.faces){
+      const bob = Math.sin(performance.now()/220 + f.x/60)*4;
+      cx.fillStyle = 'rgba(240,20,156,.9)';
+      cx.fillRect(f.x - 19, f.y - 19 + bob, 38, 38);
+      cx.fillStyle = '#FBF9F2';
+      cx.fillRect(f.x - 16, f.y - 16 + bob, 32, 32);
+      if (FACES[f.fi]) cx.drawImage(FACES[f.fi], f.x - 16, f.y - 16 + bob, 32, 32);
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
+      cx.strokeRect(f.x - 19, f.y - 19 + bob, 38, 38);
+    }
+    cx.imageSmoothingEnabled = true;
   }
 
   /* powerups: floating earbud orbs */
