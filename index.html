@@ -85,7 +85,9 @@
   #sharkbtn{color:var(--ink); background:var(--pink); box-shadow:6px 6px 0 var(--ink)}
   #simbtn{color:var(--ink); background:var(--panel); border:3px solid var(--ink) !important;
     box-shadow:6px 6px 0 var(--pink)}
-  #drivebtn{color:var(--pink); background:var(--ink); box-shadow:6px 6px 0 var(--pink)}
+  #drivebtn{color:var(--pink); background:var(--ink); box-shadow:6px 6px 0 var(--pink); line-height:1.3}
+  #drivebtn small{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.1em;
+    color:rgba(251,249,242,.65); margin-top:5px; text-transform:lowercase}
   #startbtn:hover,#sharkbtn:hover,#simbtn:hover,#drivebtn:hover{transform:translate(-2px,-2px)}
   #startbtn:active,#sharkbtn:active,#simbtn:active,#drivebtn:active{transform:translate(3px,3px)}
   #startbtn:focus-visible,#sharkbtn:focus-visible,#simbtn:focus-visible,#drivebtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
@@ -376,7 +378,7 @@
     <div id="introline">jump over everything holding india back.<br>collect <em>₹100 crore</em>. close the round.</div>
     <div id="howto">tap = jump · tap again mid-air = double jump<br>land on blocks. grab the crores. do not trip on the 9-5.</div>
     <div id="modebtns">
-      <button id="drivebtn">🏎️ NITRO DRIVE</button>
+      <button id="drivebtn">🏎️ OFF/BEAT DRIVE<small>full send racer · new</small></button>
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
       <button id="simbtn">😎 CEO KI KURSI</button>
@@ -1726,7 +1728,7 @@ function stepDrive(dt){
   } else {
     DRV.px += steer * dt * 1.7 * (0.45 + DRV.speed/DRV.max*0.65);
   }
-  DRV.px -= dCurve(Math.floor(DRV.pos)) * (DRV.speed/DRV.max) * dt * 0.55;
+  DRV.px -= dCurve2(Math.floor(DRV.pos)) * (DRV.speed/DRV.max) * dt * 1.1;
   DRV.px = Math.max(-1.4, Math.min(1.4, DRV.px));
   /* drift sparks on hard steering at speed */
   const steerAmt = DRV.touchX !== null ? (DRV.touchX - DRV.px)*2 : steer;
@@ -1824,8 +1826,8 @@ $('dpitch').addEventListener('click', () => {
   typePitch();
 });
 $('dshare').addEventListener('click', async () => {
-  const data = { title:'OFF/BEAT · NITRO DRIVE',
-    text:'nitro drive: ' + $('dfkm').textContent + ' km at ' + DRV.topSpd + ' km/h, ' + DRV.ot + ' overtakes 🏎️ full send.',
+  const data = { title:'OFF/BEAT DRIVE',
+    text:'off/beat drive: ' + $('dfkm').textContent + ' km at ' + DRV.topSpd + ' km/h, ' + DRV.ot + ' overtakes 🏎️ full send.',
     url:location.href };
   try{
     if (navigator.share) await navigator.share(data);
@@ -2098,6 +2100,284 @@ function drawDrive(dt){
   }
   cx.globalAlpha = 1;
 }
+/* ===== drive engine v2: true pseudo-3d projection, crest clipping ===== */
+const SEG_N = 62;
+function dCurve2(i){ return Math.sin(i/38)*1.0 + Math.sin(i/91)*0.7; }
+function dHill2(i){ return Math.sin(i/42)*1.9 + Math.sin(i/23)*0.55; }
+function drawDrive2(dt){
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  if (G.shake > 0.3){
+    cx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
+    G.shake *= Math.pow(0.0005, dt);
+  }
+  const bankSteer = DRV.touchX !== null
+    ? Math.max(-1, Math.min(1, (DRV.touchX - DRV.px)*1.6))
+    : ((DRV.kL?-1:0)+(DRV.kR?1:0));
+  if (!reduceMotion){
+    const bank = (bankSteer*0.5 + dCurve2(Math.floor(DRV.pos))*0.5) * (DRV.speed/DRV.max);
+    cx.translate(W/2, H); cx.rotate(bank*0.04); cx.translate(-W/2, -H);
+  }
+  const portrait = W < H;
+  const horizon = H*(portrait ? 0.34 : 0.40);
+  /* sky */
+  const sg = cx.createLinearGradient(0,0,0,horizon);
+  sg.addColorStop(0,'#F8F5EB'); sg.addColorStop(1,'#EFEBDD');
+  cx.fillStyle = sg; cx.fillRect(-40,-40,W+80,horizon+42);
+  const sunX = W*0.55 - DRV.px*W*0.05, sunY = horizon - H*0.15, sunR = Math.min(W,H)*0.09;
+  cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
+  cx.fillStyle = 'rgba(240,20,156,'+(DRV.boost>0?0.5:0.3)+')'; cx.fill();
+  cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4,sunR*0.16); cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(sunX+sunR*0.32, sunY-sunR*0.75); cx.lineTo(sunX-sunR*0.32, sunY+sunR*0.75); cx.stroke();
+  /* drifting clouds */
+  cx.fillStyle = 'rgba(251,249,242,.8)';
+  for (const [off, cy2, cs] of [[0, 0.55, 1],[W*0.9, 0.3, 0.7]]){
+    const cxp = W - ((DRV.pos*2.2 + off) % (W*1.7));
+    cx.beginPath();
+    cx.ellipse(cxp, horizon*cy2, 54*cs, 15*cs, 0, 0, Math.PI*2);
+    cx.ellipse(cxp+34*cs, horizon*cy2+6, 38*cs, 12*cs, 0, 0, Math.PI*2);
+    cx.fill();
+  }
+  /* skyline */
+  cx.fillStyle = 'rgba(17,17,20,.07)';
+  for (let b=0;b<14;b++){
+    const bw2 = 40 + (b*53)%70, bh = 14 + (b*37)%42;
+    cx.fillRect(((b*137 - DRV.pos*3) % (W+160) + W+160) % (W+160) - 80, horizon-bh, bw2, bh);
+  }
+  /* ground */
+  cx.fillStyle = '#E7E3D3';
+  cx.fillRect(-40, horizon, W+80, H-horizon+40);
+  /* projection */
+  const base = Math.floor(DRV.pos), frac = DRV.pos - base;
+  const camH = 2.6, K = H*0.34;
+  const camY = camH + dHill2(base) + (dHill2(base+1)-dHill2(base))*frac;
+  const RW = W*(portrait ? 0.6 : 0.4);
+  const GAIN = 0.55;
+  const T = dCurve2(base)*GAIN;
+  const rows = [];
+  let Xacc = 0;
+  for (let n = 0; n <= SEG_N; n++){
+    const i = base + n;
+    if (n > 0) Xacc += dCurve2(i-1)*GAIN;
+    const z = Math.max(0.3, n - frac + 0.55);
+    const s = 1/z;
+    const wx = Xacc - T*(n - frac);
+    rows.push({
+      i, s, vis:false,
+      y: horizon + K*(camY - dHill2(i))*s,
+      w: RW*s,
+      x: W/2 + (wx - DRV.px)*RW*s,
+    });
+  }
+  /* road bands near→far with crest clipping */
+  let minY = H + 80;
+  let prev = rows[0];
+  for (let n = 1; n <= SEG_N; n++){
+    const r = rows[n];
+    if (r.y >= minY){ continue; }
+    r.vis = true;
+    const alt = r.i % 2;
+    /* grass band */
+    cx.fillStyle = alt ? '#EAE6D8' : '#E1DDCD';
+    cx.fillRect(-40, r.y, W+80, Math.min(minY, prev.y) - r.y + 1);
+    /* rumble */
+    const rw1 = prev.w*1.16, rw2 = r.w*1.16;
+    cx.fillStyle = alt ? '#F0149C' : '#FBF9F2';
+    cx.beginPath();
+    cx.moveTo(prev.x - rw1, prev.y); cx.lineTo(prev.x + rw1, prev.y);
+    cx.lineTo(r.x + rw2, r.y); cx.lineTo(r.x - rw2, r.y);
+    cx.closePath(); cx.fill();
+    /* road */
+    cx.fillStyle = alt ? '#2B2B32' : '#26262C';
+    cx.beginPath();
+    cx.moveTo(prev.x - prev.w, prev.y); cx.lineTo(prev.x + prev.w, prev.y);
+    cx.lineTo(r.x + r.w, r.y); cx.lineTo(r.x - r.w, r.y);
+    cx.closePath(); cx.fill();
+    /* lane dashes */
+    if (r.i % 3 !== 0){
+      cx.fillStyle = 'rgba(251,249,242,.7)';
+      for (const ln of [-0.36, 0.36]){
+        cx.beginPath();
+        cx.moveTo(prev.x + ln*prev.w - prev.w*0.02, prev.y);
+        cx.lineTo(prev.x + ln*prev.w + prev.w*0.02, prev.y);
+        cx.lineTo(r.x + ln*r.w + r.w*0.02, r.y);
+        cx.lineTo(r.x + ln*r.w - r.w*0.02, r.y);
+        cx.closePath(); cx.fill();
+      }
+    }
+    /* roadside poles + billboards */
+    if (r.i % 5 === 0 && r.s > 0.06){
+      const side = (r.i % 10 === 0) ? -1 : 1;
+      const px2 = r.x + side * r.w * 1.5;
+      const ph = r.w * 0.55;
+      cx.fillStyle = (r.i % 10 === 0) ? '#F0149C' : '#111114';
+      cx.fillRect(px2 - r.w*0.02, r.y - ph, r.w*0.04, ph);
+      cx.beginPath(); cx.arc(px2, r.y - ph, r.w*0.06, 0, Math.PI*2); cx.fill();
+    }
+    if (r.i % 21 === 0 && r.s > 0.1){
+      const side = (r.i % 42 === 0) ? -1 : 1;
+      const bx = r.x + side * r.w * 1.85;
+      const bw3 = r.w * 0.72, bh3 = r.w * 0.32;
+      cx.fillStyle = '#111114';
+      cx.fillRect(bx - bw3/2 - 2, r.y - bh3*2 - 2, bw3 + 4, bh3 + 4);
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(bx - bw3/2, r.y - bh3*2, bw3, bh3);
+      cx.fillStyle = '#111114';
+      cx.fillRect(bx - 2, r.y - bh3, 4, bh3);
+      if (r.s > 0.25){
+        cx.font = '700 ' + Math.max(7, bh3*0.42) + 'px "Archivo Black", sans-serif';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('OFF/BEAT', bx, r.y - bh3*1.5);
+      }
+    }
+    minY = r.y;
+    prev = r;
+  }
+  /* sprites far→near */
+  const spr = [];
+  for (const car of DRV.cars){
+    const rel = car.p - DRV.pos;
+    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:'car', lane:car.lane });
+  }
+  for (const pk of DRV.picks){
+    const rel = pk.p - DRV.pos;
+    if (!pk.dead && rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:pk.kind, lane:pk.lane, fi:pk.fi });
+  }
+  spr.sort((a,b) => b.rel - a.rel);
+  for (const sp of spr){
+    const n = Math.max(1, Math.min(SEG_N, Math.floor(sp.rel + frac)));
+    const r = rows[n];
+    if (!r || !r.vis) continue;
+    const sx = r.x + sp.lane * r.w;
+    if (sp.kind === 'car'){
+      const cw2 = r.w * 0.4, chh = cw2 * 0.64;
+      cx.fillStyle = 'rgba(0,0,0,.25)';
+      cx.beginPath(); cx.ellipse(sx, r.y + 2, cw2*0.55, chh*0.15, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = '#0C0C10';
+      cx.fillRect(sx - cw2*0.56, r.y - chh*0.34, cw2*0.14, chh*0.38);
+      cx.fillRect(sx + cw2*0.42, r.y - chh*0.34, cw2*0.14, chh*0.38);
+      const tg = cx.createLinearGradient(sx, r.y - chh, sx, r.y);
+      tg.addColorStop(0, '#34343E'); tg.addColorStop(0.5, '#1B1B22'); tg.addColorStop(1, '#0E0E12');
+      cx.fillStyle = tg;
+      rrp(sx - cw2/2, r.y - chh*0.7, cw2, chh*0.7, chh*0.16); cx.fill();
+      cx.fillStyle = '#3E3E4A';
+      rrp(sx - cw2*0.32, r.y - chh, cw2*0.64, chh*0.42, chh*0.12); cx.fill();
+      cx.fillStyle = 'rgba(251,249,242,.15)';
+      cx.fillRect(sx - cw2*0.26, r.y - chh*0.94, cw2*0.52, chh*0.13);
+      if (r.s > 0.2){
+        cx.fillStyle = '#FBF9F2';
+        cx.font = '700 ' + Math.max(6, cw2*0.15) + 'px "Space Mono", monospace';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('BORING', sx, r.y - chh*0.34);
+      }
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(sx - cw2*0.44, r.y - chh*0.1, cw2*0.15, chh*0.09);
+      cx.fillRect(sx + cw2*0.29, r.y - chh*0.1, cw2*0.15, chh*0.09);
+    } else if (sp.kind === 'n'){
+      const rr2 = Math.max(4, r.w * 0.12);
+      const bob = Math.sin(performance.now()/180 + sp.rel)*rr2*0.3;
+      cx.beginPath(); cx.arc(sx, r.y - rr2*1.3 + bob, rr2, 0, Math.PI*2);
+      cx.fillStyle = '#F0149C'; cx.fill();
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2; cx.stroke();
+      if (r.s > 0.15){
+        cx.font = rr2*1.2 + 'px serif';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('🎧', sx, r.y - rr2*1.25 + bob);
+      }
+    } else {
+      const rr2 = Math.max(5, r.w * 0.13);
+      cx.imageSmoothingEnabled = false;
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(sx - rr2, r.y - rr2*2.3, rr2*2, rr2*2);
+      if (FACES[sp.fi]) cx.drawImage(FACES[sp.fi], sx - rr2 + 2, r.y - rr2*2.3 + 2, rr2*2 - 4, rr2*2 - 4);
+      cx.imageSmoothingEnabled = true;
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
+      cx.strokeRect(sx - rr2, r.y - rr2*2.3, rr2*2, rr2*2);
+    }
+  }
+  /* player car: flat-shaded 3d with animated wheels + cabin parallax */
+  const pcx2 = W/2, pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095));
+  const carW = Math.min(W*(portrait ? 0.42 : 0.24), 215), carH = carW*0.56;
+  const tilt = bankSteer*0.11 + Math.sin(performance.now()/70)*0.01*(DRV.speed/DRV.max)
+    + (DRV.crashT > 0 ? Math.sin(performance.now()/40)*0.14 : 0);
+  cx.save();
+  cx.translate(pcx2, pcy);
+  cx.rotate(tilt);
+  if (DRV.boost > 0){
+    cx.fillStyle = 'rgba(240,20,156,.85)';
+    const fl = carH*(0.35 + Math.random()*0.4);
+    cx.beginPath();
+    cx.moveTo(-carW*0.26, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl); cx.lineTo(-carW*0.06, carH*0.3);
+    cx.moveTo(carW*0.06, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.85); cx.lineTo(carW*0.26, carH*0.3);
+    cx.fill();
+    cx.fillStyle = 'rgba(251,249,242,.9)';
+    cx.beginPath();
+    cx.moveTo(-carW*0.21, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl*0.5); cx.lineTo(-carW*0.11, carH*0.3);
+    cx.moveTo(carW*0.11, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.42); cx.lineTo(carW*0.21, carH*0.3);
+    cx.fill();
+  }
+  cx.fillStyle = 'rgba(0,0,0,.3)';
+  cx.beginPath(); cx.ellipse(0, carH*0.34, carW*0.56, carH*0.13, 0, 0, Math.PI*2); cx.fill();
+  /* wheels with scrolling tread */
+  for (const side of [-1,1]){
+    const wx2 = side < 0 ? -carW*0.56 : carW*0.39;
+    cx.fillStyle = '#0C0C10';
+    rrp(wx2, -carH*0.04, carW*0.17, carH*0.42, carH*0.08); cx.fill();
+    cx.save();
+    cx.beginPath(); cx.rect(wx2, -carH*0.04, carW*0.17, carH*0.42); cx.clip();
+    cx.fillStyle = '#2E2E38';
+    const tread = carH*0.14;
+    const toff2 = (DRV.pos*80) % tread;
+    for (let ty = -carH*0.04 - tread + toff2; ty < carH*0.4; ty += tread){
+      cx.fillRect(wx2, ty, carW*0.17, tread*0.35);
+    }
+    cx.restore();
+  }
+  const bgrad = cx.createLinearGradient(0, -carH*0.5, 0, carH*0.35);
+  bgrad.addColorStop(0, '#FF63B8'); bgrad.addColorStop(0.55, '#F0149C'); bgrad.addColorStop(1, '#B80D77');
+  cx.fillStyle = (DRV.crashT > 0 && Math.floor(performance.now()/80)%2) ? '#FF9DD2' : bgrad;
+  rrp(-carW*0.48, -carH*0.18, carW*0.96, carH*0.52, carH*0.14);
+  cx.fill();
+  cx.strokeStyle = '#111114'; cx.lineWidth = 3; cx.stroke();
+  cx.fillStyle = 'rgba(17,17,20,.2)';
+  rrp(-carW*0.46, carH*0.2, carW*0.92, carH*0.12, carH*0.06); cx.fill();
+  /* cabin parallax: shifts opposite the steer for fake yaw */
+  cx.save();
+  cx.translate(-bankSteer*carW*0.06, 0);
+  const cabW = carW*0.58;
+  const cgrad = cx.createLinearGradient(0, -carH*0.56, 0, -carH*0.1);
+  cgrad.addColorStop(0, '#23232B'); cgrad.addColorStop(1, '#101014');
+  cx.fillStyle = cgrad;
+  rrp(-cabW/2, -carH*0.54, cabW, carH*0.42, carH*0.12);
+  cx.fill(); cx.strokeStyle = '#111114'; cx.lineWidth = 2.5; cx.stroke();
+  cx.fillStyle = 'rgba(251,249,242,.2)';
+  rrp(-cabW*0.38, -carH*0.5, cabW*0.76, carH*0.15, carH*0.05); cx.fill();
+  cx.fillStyle = '#111114';
+  rrp(-carW*0.44, -carH*0.68, carW*0.88, carH*0.1, carH*0.04); cx.fill();
+  cx.fillRect(-carW*0.3, -carH*0.58, carW*0.07, carH*0.1);
+  cx.fillRect(carW*0.23, -carH*0.58, carW*0.07, carH*0.1);
+  cx.restore();
+  cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(4, carW*0.05); cx.lineCap = 'round';
+  cx.beginPath(); cx.moveTo(carW*0.08, -carH*0.1); cx.lineTo(-carW*0.08, carH*0.24); cx.stroke();
+  cx.fillStyle = '#FBF9F2';
+  rrp(-carW*0.44, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
+  rrp(carW*0.30, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
+  cx.restore();
+  /* particles */
+  for (const p of parts){
+    cx.globalAlpha = Math.max(0, 1 - p.t/p.life);
+    if (p.kind === 'txt'){
+      cx.fillStyle = p.c;
+      cx.font = '700 16px "Space Mono", monospace';
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.fillText(p.text, p.x, p.y);
+    } else {
+      cx.fillStyle = p.c;
+      cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
+    }
+  }
+  cx.globalAlpha = 1;
+}
+
 /* drive controls */
 addEventListener('keydown', e => {
   if (!DRV.on) return;
@@ -2476,7 +2756,7 @@ function frame(t){
   const dt = Math.min(0.033, (t-lastT)/1000); lastT = t;
   if (DRV.on){
     if (!dlg.open) stepDrive(dt);
-    if (DRV.on) drawDrive(dt);
+    if (DRV.on) drawDrive2(dt);
   } else {
     stepGame(dt);
     stepParts(dt);
