@@ -85,9 +85,31 @@
   #sharkbtn{color:var(--ink); background:var(--pink); box-shadow:6px 6px 0 var(--ink)}
   #simbtn{color:var(--ink); background:var(--panel); border:3px solid var(--ink) !important;
     box-shadow:6px 6px 0 var(--pink)}
-  #startbtn:hover,#sharkbtn:hover,#simbtn:hover{transform:translate(-2px,-2px)}
-  #startbtn:active,#sharkbtn:active,#simbtn:active{transform:translate(3px,3px)}
-  #startbtn:focus-visible,#sharkbtn:focus-visible,#simbtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+  #drivebtn{color:var(--pink); background:var(--ink); box-shadow:6px 6px 0 var(--pink)}
+  #startbtn:hover,#sharkbtn:hover,#simbtn:hover,#drivebtn:hover{transform:translate(-2px,-2px)}
+  #startbtn:active,#sharkbtn:active,#simbtn:active,#drivebtn:active{transform:translate(3px,3px)}
+  #startbtn:focus-visible,#sharkbtn:focus-visible,#simbtn:focus-visible,#drivebtn:focus-visible{outline:3px solid var(--pink); outline-offset:3px}
+
+  /* ===== NITRO DRIVE HUD ===== */
+  #dhud{position:fixed; top:max(14px,env(safe-area-inset-top)); left:0; right:0; z-index:10;
+    display:flex; justify-content:center; gap:8px; flex-wrap:wrap; pointer-events:none; padding:0 60px}
+  #dhud .pill{background:rgba(251,249,242,.85)}
+  #dtimepill b{font-family:var(--pxf); font-size:13px}
+  #nitrowrap{position:fixed; right:16px; bottom:max(18px,env(safe-area-inset-bottom)); z-index:11;
+    display:flex; flex-direction:column; align-items:center; gap:8px}
+  #nbar{width:110px; height:12px; border:2px solid var(--ink); background:var(--panel)}
+  #nfill{height:100%; width:0%; background:repeating-linear-gradient(90deg,var(--pink) 0 7px,#FF62BE 7px 14px)}
+  #nitrobtn{width:92px; height:92px; border-radius:50%; border:3px solid var(--ink);
+    background:var(--pink); color:var(--ink); font-family:var(--pxf); font-size:11px;
+    box-shadow:5px 5px 0 var(--ink); cursor:pointer; touch-action:none; user-select:none}
+  #nitrobtn:active{transform:translate(3px,3px); box-shadow:0 0 0}
+  #drivehint{position:fixed; left:16px; bottom:max(18px,env(safe-area-inset-bottom)); z-index:11;
+    font-family:var(--mono); font-size:13px; color:var(--dim); line-height:1.6; pointer-events:none}
+  @media (max-width:640px){
+    #nitrobtn{width:78px; height:78px; font-size:10px}
+    #drivehint{display:none}
+    #dhud{padding:0 8px; top:max(52px,calc(env(safe-area-inset-top) + 44px))}
+  }
 
   /* ===== AMAN 2.0 SIM ===== */
   #sim{position:fixed; inset:0; z-index:15; background:radial-gradient(90% 70% at 50% 30%, #FBF8EE 0%, #F2EFE6 70%);
@@ -355,6 +377,7 @@
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
       <button id="simbtn">😎 CEO KI KURSI</button>
+      <button id="drivebtn">🏎️ NITRO DRIVE</button>
     </div>
     <div class="fine">a fan tribute. not affiliated with OFF/BEAT or aman gupta.<br>some grow older. some grow bolder. some are still loading.</div>
   </div>
@@ -433,6 +456,41 @@
     <button id="simbtnR"></button>
   </div>
   <div id="simfoot">drag the card, or tap. every choice changes the meters. 0 or 100 = doom.</div>
+</div>
+
+<!-- DRIVE HUD -->
+<div id="dhud" class="hidden">
+  <span class="pill" id="dtimepill">⏱ <b id="dtime">60</b>s</span>
+  <span class="pill"><b id="dspd">0</b> km/h</span>
+  <span class="pill">₹<b id="dcr">0</b> Cr</span>
+  <span class="pill">overtakes <b id="dot">0</b></span>
+</div>
+<div id="nitrowrap" class="hidden">
+  <div id="nbar"><div id="nfill"></div></div>
+  <button id="nitrobtn">NITRO 🎧</button>
+</div>
+<div id="drivehint" class="hidden">← → steer · hold SPACE = nitro<br>🎧 fills nitro · dodge boring corp</div>
+
+<!-- DRIVE OVER -->
+<div class="panelbg hidden" id="dover">
+  <div class="card">
+    <img class="cardpix" alt="">
+    <h2>DRIVE<span class="slash">/</span>REPORT</h2>
+    <div class="rank" id="drank"></div>
+    <div class="statgrid">
+      <div class="stat"><div class="v" id="dfkm">0</div><div class="l">KM</div></div>
+      <div class="stat"><div class="v" id="dftop">0</div><div class="l">TOP KM/H</div></div>
+      <div class="stat"><div class="v" id="dfot">0</div><div class="l">OVERTAKES</div></div>
+      <div class="stat"><div class="v" id="dfcr">₹0</div><div class="l">COLLECTED</div></div>
+    </div>
+    <p id="droast"></p>
+    <div class="row">
+      <button class="primary" id="dagain">full send again</button>
+      <button class="gold" id="dpitch">one more thing…</button>
+      <button id="dshare">share</button>
+      <button id="dmenu">menu</button>
+    </div>
+  </div>
 </div>
 
 <!-- SIM OVER -->
@@ -633,6 +691,8 @@ const sfx = {
   die(){ blipNow(220, 50, 0.14, 0.4, 'square'); },
   ding(){ blipNow(880,1320,0.1,0.2); setTimeout(()=>blipNow(1100,1600,0.08,0.2),90); },
   ui(){ blipNow(700,1000,0.06,0.1); },
+  spicy(){ blipNow(220,90,0.09,0.25,'square'); },
+  pop(f){ blipNow(f||500,(f||500)*1.35,0.08,0.12,'square'); },
 };
 
 /* ================= GAME ================= */
@@ -894,10 +954,16 @@ function jump(){
   }
 }
 cv.addEventListener('pointerdown', e => {
+  if (DRV.on){
+    DRV.touch = e.clientX < innerWidth/2 ? -1 : 1;
+    return;
+  }
   if (!$('over').classList.contains('hidden')) return;
   if (!$('pitch').classList.contains('hidden')) return;
   jump();
 });
+cv.addEventListener('pointerup', () => { DRV.touch = 0; });
+cv.addEventListener('pointercancel', () => { DRV.touch = 0; });
 addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'ArrowUp') && !e.repeat){
     e.preventDefault();
@@ -1301,7 +1367,11 @@ function toHome(){
   S.on = false; S.live = false; clearInterval(S.timer);
   closeDlg();
   SIM.on = false;
-  ['over','sover','pitch','shark','sim','simover','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  DRV.on = false;
+  clearInterval(DRV.beatTimer);
+  if (DRV.eng) DRV.eng.g.gain.value = 0;
+  ['over','sover','pitch','shark','sim','simover','dover','dhud','nitrowrap','drivehint','rlives','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  $('hudtop').classList.remove('hidden');
   $('intro').classList.remove('hidden');
 }
 $('homebtn').addEventListener('click', () => { sfx.ui(); toHome(); });
@@ -1533,6 +1603,432 @@ $('simshare').addEventListener('click', async () => {
     if (navigator.share) await navigator.share(data);
     else { await navigator.clipboard.writeText(data.text + ' ' + data.url); toast('link copied'); }
   }catch(e){}
+});
+
+/* ================= NITRO DRIVE (pseudo-3d racer) ================= */
+const DRV = {
+  on:false, pos:0, speed:0, max:56, px:0, kL:false, kR:false, touch:0,
+  timeLeft:60, ot:0, cr:0, nitro:40, nHold:false, boost:0, crashT:0,
+  cars:[], picks:[], topSpd:0, lastCk:0, beatT:0, beatIdx:0, beatTimer:null, eng:null,
+};
+const DRV_N = 70;
+function dCurve(i){ return Math.sin(i/47)*1.9 + Math.sin(i/113)*1.4; }
+function dHill(i){ return Math.sin(i/33)*90 + Math.sin(i/85)*150; }
+const D_RANKS = [
+  [80,'NITRO RAJA 🏎️'],[60,'BOLDER THAN TRAFFIC ⚡'],[40,'sasta schumacher'],
+  [25,'indicator off, vibes on'],[10,'sunday driver 🐢'],[0,'gaadi seekh lo bhai'],
+];
+const D_ROASTS = [
+  [80,'the traffic filed a complaint. ekdum full send.'],
+  [60,'boring corp sedans are scared of you now.'],
+  [40,'fast, furious, thoda careful bhi.'],
+  [25,'signal tod diya par style mein. respect.'],
+  [10,'aaram se chalao bhai, jelly nahi gir jaaye.'],
+  [0,'the car ran YOU. run it back.'],
+];
+let driveIntroShown = false;
+function startDrive(){
+  unlockAudio();
+  Object.assign(DRV, { on:true, pos:0, speed:0, px:0, timeLeft:60, ot:0, cr:0,
+    nitro:40, nHold:false, boost:0, crashT:0, topSpd:0, lastCk:0, beatIdx:0,
+    cars:[], picks:[] });
+  for (let c=0;c<9;c++){
+    DRV.cars.push({ p: 30 + c*22 + Math.random()*10, lane:[-0.55,0,0.55][c%3],
+      spd: 22 + Math.random()*8 });
+  }
+  for (let c=0;c<14;c++){
+    DRV.picks.push({ p: 20 + c*19 + Math.random()*12, lane:[-0.5,0,0.5][Math.floor(Math.random()*3)],
+      kind: Math.random() < 0.55 ? 'n' : 'card', fi: Math.floor(Math.random()*5), dead:false });
+  }
+  parts.length = 0;
+  ['intro','over','sover','pitch','shark','sim','simover','dover','raise'].forEach(id => $(id).classList.add('hidden'));
+  $('hudtop').classList.add('hidden');
+  ['dhud','nitrowrap','drivehint','homebtn'].forEach(id => $(id).classList.remove('hidden'));
+  closeDlg();
+  /* engine hum */
+  if (ac && !DRV.eng){
+    const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = 320;
+    o.frequency.value = 50; g.gain.value = 0.0;
+    o.connect(f).connect(g).connect(ac.destination); o.start();
+    DRV.eng = { o, g };
+  }
+  if (DRV.eng) DRV.eng.g.gain.value = 0.05;
+  /* drive beat */
+  clearInterval(DRV.beatTimer);
+  DRV.beatT = ac ? ac.currentTime + 0.3 : 0;
+  DRV.beatTimer = setInterval(() => {
+    if (!DRV.on || !ac) return;
+    const bd = 60/126;
+    while (DRV.beatT < ac.currentTime + 0.4){
+      const t = DRV.beatT, i = DRV.beatIdx;
+      kick(t);
+      hat(t, 0.05); hat(t + bd/2, 0.08);
+      bass(t, BASS_SEQ[i % BASS_SEQ.length]*1.5, bd*0.9);
+      if (i % 2 === 1) snare(t);
+      if (DRV.boost > 0) pluck(t + bd/2, ARP[i % ARP.length]*1.5);
+      DRV.beatT += bd; DRV.beatIdx++;
+    }
+  }, 120);
+  if (!driveIntroShown){
+    driveIntroShown = true;
+    setTimeout(() => {
+      if (DRV.on) showDlg('PITSTOP.EXE',
+        'gaadi nahi, brand chala rahe ho 🏎️\n\nleft/right se steer.\n🎧 utha ke NITRO dabao.\nboring corp se door raho.',
+        [['🏎️','🎧','⚡'],['⚡','🏎️','🔥'],['🎧','⚡','🏎️']],
+        [['VROOM 🏁', null, true]]);
+    }, 500);
+  }
+}
+$('drivebtn').addEventListener('click', startDrive);
+function stepDrive(dt){
+  if (!DRV.on) return;
+  DRV.timeLeft -= dt;
+  if (DRV.timeLeft <= 0){ endDrive(); return; }
+  $('dtime').textContent = Math.ceil(DRV.timeLeft);
+  /* speed */
+  const steer = (DRV.kL ? -1 : 0) + (DRV.kR ? 1 : 0) + DRV.touch;
+  DRV.boost = (DRV.nHold && DRV.nitro > 0) ? 1 : Math.max(0, DRV.boost - dt*3);
+  if (DRV.nHold && DRV.nitro > 0) DRV.nitro = Math.max(0, DRV.nitro - dt*26);
+  const targetMax = DRV.max * (DRV.boost > 0 ? 1.35 : 1);
+  const offroad = Math.abs(DRV.px) > 1.02;
+  if (DRV.crashT > 0){ DRV.crashT -= dt; }
+  const cap = offroad ? DRV.max*0.35 : targetMax;
+  DRV.speed += (cap - DRV.speed) * Math.min(1, dt * (DRV.speed < cap ? 0.55 : 3));
+  DRV.pos += DRV.speed * dt;
+  const kmh = Math.round(DRV.speed * 6.2 * (DRV.boost > 0 ? 1.1 : 1));
+  DRV.topSpd = Math.max(DRV.topSpd, kmh);
+  $('dspd').textContent = kmh;
+  if (offroad && !reduceMotion) G.shake = Math.max(G.shake, 4);
+  /* steering + centrifugal */
+  DRV.px += steer * dt * 1.7 * (0.45 + DRV.speed/DRV.max*0.65);
+  DRV.px -= dCurve(Math.floor(DRV.pos)) * (DRV.speed/DRV.max) * dt * 0.55;
+  DRV.px = Math.max(-1.4, Math.min(1.4, DRV.px));
+  /* checkpoint */
+  if (DRV.pos - DRV.lastCk > 300){
+    DRV.lastCk = DRV.pos;
+    DRV.timeLeft += 12;
+    judge('CHECKPOINT +12s');
+    sfx.ding();
+    confetti(W/2, H*0.3, 16);
+  }
+  /* traffic */
+  for (const car of DRV.cars){
+    car.p += car.spd * dt;
+    const rel = car.p - DRV.pos;
+    if (rel < -3){
+      DRV.ot++; $('dot').textContent = DRV.ot;
+      car.p = DRV.pos + 55 + Math.random()*45;
+      car.lane = [-0.55,0,0.55][Math.floor(Math.random()*3)];
+      sfx.coin(2);
+    } else if (rel < 1.4 && rel > -0.3 && Math.abs(DRV.px - car.lane) < 0.34 && DRV.crashT <= 0){
+      DRV.crashT = 1.2;
+      DRV.speed *= 0.3;
+      G.shake = reduceMotion ? 0 : 18;
+      sfx.die();
+      judge('💥 BORING CORP SEDAN');
+      car.p = DRV.pos + 40 + Math.random()*30;
+    }
+  }
+  /* pickups */
+  for (const pk of DRV.picks){
+    const rel = pk.p - DRV.pos;
+    if (rel < -2 || pk.dead){
+      pk.p = DRV.pos + 45 + Math.random()*55;
+      pk.lane = [-0.5,0,0.5][Math.floor(Math.random()*3)];
+      pk.kind = Math.random() < 0.55 ? 'n' : 'card';
+      pk.fi = Math.floor(Math.random()*5);
+      pk.dead = false;
+    } else if (rel < 1.1 && rel > -0.2 && Math.abs(DRV.px - pk.lane) < 0.3){
+      pk.dead = true;
+      if (pk.kind === 'n'){
+        DRV.nitro = Math.min(100, DRV.nitro + 34);
+        sfx.pop ? sfx.pop(700) : sfx.ding();
+        parts.push({ kind:'txt', text:'+NITRO 🎧', x:W/2, y:H*0.55, vx:0, vy:-80, life:.7, t:0, r:0, c:'#F0149C' });
+      } else {
+        DRV.cr += 5; $('dcr').textContent = DRV.cr;
+        sfx.ding();
+        parts.push({ kind:'txt', text:'+₹5 aman card', x:W/2, y:H*0.55, vx:0, vy:-80, life:.7, t:0, r:0, c:'#F0149C' });
+      }
+    }
+  }
+  $('nfill').style.width = DRV.nitro + '%';
+  /* engine pitch */
+  if (DRV.eng && ac){
+    DRV.eng.o.frequency.value = 46 + (DRV.speed/DRV.max)*85 + DRV.boost*30;
+    DRV.eng.g.gain.value = 0.05 + DRV.boost*0.02;
+  }
+  stepParts(dt);
+}
+function endDrive(){
+  DRV.on = false;
+  clearInterval(DRV.beatTimer);
+  if (DRV.eng) DRV.eng.g.gain.value = 0;
+  ['dhud','nitrowrap','drivehint','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  $('hudtop').classList.remove('hidden');
+  const km = (DRV.pos/40).toFixed(1);
+  const score = DRV.pos/40*8 + DRV.ot*3 + DRV.cr;
+  $('dfkm').textContent = km;
+  $('dftop').textContent = DRV.topSpd;
+  $('dfot').textContent = DRV.ot;
+  $('dfcr').textContent = '₹' + DRV.cr;
+  $('drank').textContent = D_RANKS.find(r => score >= r[0])[1];
+  $('droast').textContent = D_ROASTS.find(r => score >= r[0])[1];
+  $('dover').classList.remove('hidden');
+  sfx.ding();
+  confetti(W/2, H*0.4, 30);
+}
+$('dagain').addEventListener('click', () => { $('dover').classList.add('hidden'); startDrive(); });
+$('dmenu').addEventListener('click', () => { $('dover').classList.add('hidden'); toHome(); });
+$('dpitch').addEventListener('click', () => {
+  $('dover').classList.add('hidden');
+  $('pitch').classList.remove('hidden');
+  typePitch();
+});
+$('dshare').addEventListener('click', async () => {
+  const data = { title:'OFF/BEAT · NITRO DRIVE',
+    text:'nitro drive: ' + $('dfkm').textContent + ' km at ' + DRV.topSpd + ' km/h, ' + DRV.ot + ' overtakes 🏎️ full send.',
+    url:location.href };
+  try{
+    if (navigator.share) await navigator.share(data);
+    else { await navigator.clipboard.writeText(data.text + ' ' + data.url); toast('link copied'); }
+  }catch(e){}
+});
+/* nitro button (touch) */
+const nbtn = $('nitrobtn');
+nbtn.addEventListener('pointerdown', e => { e.preventDefault(); DRV.nHold = true; });
+nbtn.addEventListener('pointerup', () => { DRV.nHold = false; });
+nbtn.addEventListener('pointercancel', () => { DRV.nHold = false; });
+/* drive render */
+function drawDrive(dt){
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  if (G.shake > 0.3){
+    cx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
+    G.shake *= Math.pow(0.0005, dt);
+  }
+  const horizon = H*0.42;
+  /* sky */
+  const sg = cx.createLinearGradient(0,0,0,horizon);
+  sg.addColorStop(0,'#F8F5EB'); sg.addColorStop(1,'#F0ECDf');
+  cx.fillStyle = sg; cx.fillRect(-30,-30,W+60,horizon+32);
+  const sunX = W*0.5 - DRV.px*W*0.1, sunY = horizon - H*0.16, sunR = Math.min(W,H)*0.09;
+  cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
+  cx.fillStyle = 'rgba(240,20,156,'+(DRV.boost>0?0.5:0.3)+')'; cx.fill();
+  cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4,sunR*0.16); cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(sunX+sunR*0.32, sunY-sunR*0.75); cx.lineTo(sunX-sunR*0.32, sunY+sunR*0.75); cx.stroke();
+  /* horizon skyline */
+  cx.fillStyle = 'rgba(17,17,20,.07)';
+  for (let b=0;b<14;b++){
+    const bw2 = 40 + (b*53)%70, bh = 14 + (b*37)%42;
+    cx.fillRect(((b*137 - DRV.pos*2) % (W+160) + W+160) % (W+160) - 80, horizon-bh, bw2, bh);
+  }
+  /* ground base */
+  cx.fillStyle = '#E9E5D6';
+  cx.fillRect(-30, horizon, W+60, H-horizon+30);
+  /* road rows far→near */
+  const base = Math.floor(DRV.pos), frac = DRV.pos - base;
+  const rows = [];
+  let xo = 0, dxo = 0;
+  for (let n = 1; n <= DRV_N; n++){
+    const i = base + n;
+    const p = Math.pow(1 - n/DRV_N, 2.6);
+    dxo += dCurve(i) * 0.0022;
+    xo += dxo;
+    const hillDy = (dHill(i) - dHill(base)) * p * 0.55;
+    rows.push({
+      i,
+      y: horizon + (H + 40 - horizon) * p - hillDy,
+      w: (W*0.44) * p + 4,
+      c: W/2 + xo * W * p * 2.4 - DRV.px * W * 0.42 * p,
+      p,
+    });
+  }
+  for (let n = rows.length - 1; n > 0; n--){
+    const r1 = rows[n], r2 = rows[n-1]; /* r2 nearer */
+    if (r2.y <= r1.y) continue;
+    const alt = r1.i % 2;
+    /* grass */
+    cx.fillStyle = alt ? '#EAE6D8' : '#E2DECE';
+    cx.fillRect(-30, r1.y, W+60, r2.y - r1.y + 1);
+    /* rumble */
+    const rw1 = r1.w*1.14, rw2 = r2.w*1.14;
+    cx.fillStyle = alt ? '#F0149C' : '#FBF9F2';
+    cx.beginPath();
+    cx.moveTo(r1.c - rw1, r1.y); cx.lineTo(r1.c + rw1, r1.y);
+    cx.lineTo(r2.c + rw2, r2.y); cx.lineTo(r2.c - rw2, r2.y);
+    cx.closePath(); cx.fill();
+    /* road */
+    cx.fillStyle = alt ? '#2A2A31' : '#26262C';
+    cx.beginPath();
+    cx.moveTo(r1.c - r1.w, r1.y); cx.lineTo(r1.c + r1.w, r1.y);
+    cx.lineTo(r2.c + r2.w, r2.y); cx.lineTo(r2.c - r2.w, r2.y);
+    cx.closePath(); cx.fill();
+    /* center dash */
+    if (r1.i % 3 < 2){
+      const dw1 = r1.w*0.03+1, dw2 = r2.w*0.03+1;
+      cx.fillStyle = 'rgba(251,249,242,.75)';
+      cx.beginPath();
+      cx.moveTo(r1.c - dw1, r1.y); cx.lineTo(r1.c + dw1, r1.y);
+      cx.lineTo(r2.c + dw2, r2.y); cx.lineTo(r2.c - dw2, r2.y);
+      cx.closePath(); cx.fill();
+    }
+    /* billboards on this row */
+    if (r1.i % 17 === 0 && r1.p > 0.06){
+      const side = (r1.i % 34 === 0) ? -1 : 1;
+      const bx = r1.c + side * r1.w * 1.7;
+      const bw3 = r1.w * 0.62, bh3 = r1.w * 0.3;
+      cx.fillStyle = '#111114';
+      cx.fillRect(bx - bw3/2 - 2, r1.y - bh3 - 2, bw3 + 4, bh3 + 4);
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(bx - bw3/2, r1.y - bh3, bw3, bh3);
+      if (r1.p > 0.22){
+        cx.fillStyle = '#111114';
+        cx.font = '700 ' + Math.max(7, bh3*0.42) + 'px "Archivo Black", sans-serif';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('OFF/BEAT', bx, r1.y - bh3/2);
+      }
+      cx.fillStyle = '#111114';
+      cx.fillRect(bx - 2, r1.y - 2, 4, r1.w*0.12 + 2);
+    }
+  }
+  /* sprites far→near: cars + pickups */
+  const spr = [];
+  for (const car of DRV.cars){
+    const rel = car.p - DRV.pos;
+    if (rel > 0.4 && rel < DRV_N - 2) spr.push({ rel, kind:'car', lane:car.lane });
+  }
+  for (const pk of DRV.picks){
+    const rel = pk.p - DRV.pos;
+    if (!pk.dead && rel > 0.4 && rel < DRV_N - 2) spr.push({ rel, kind:pk.kind, lane:pk.lane, fi:pk.fi });
+  }
+  spr.sort((a,b) => b.rel - a.rel);
+  for (const s of spr){
+    const n = Math.max(1, Math.min(DRV_N - 1, Math.floor(s.rel)));
+    const r = rows[n-1];
+    if (!r || r.p < 0.03) continue;
+    const sx = r.c + s.lane * r.w;
+    if (s.kind === 'car'){
+      const cw2 = r.w * 0.42, chh = cw2 * 0.62;
+      cx.fillStyle = 'rgba(0,0,0,.25)';
+      cx.beginPath(); cx.ellipse(sx, r.y + 2, cw2*0.55, chh*0.16, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = '#111114';
+      cx.beginPath();
+      if (cx.roundRect) cx.roundRect(sx - cw2/2, r.y - chh, cw2, chh, chh*0.25);
+      else cx.rect(sx - cw2/2, r.y - chh, cw2, chh);
+      cx.fill();
+      cx.fillStyle = '#3A3A44';
+      cx.fillRect(sx - cw2*0.32, r.y - chh*0.85, cw2*0.64, chh*0.36);
+      if (r.p > 0.2){
+        cx.fillStyle = '#FBF9F2';
+        cx.font = '700 ' + Math.max(6, cw2*0.16) + 'px "Space Mono", monospace';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('BORING', sx, r.y - chh*0.28);
+      }
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(sx - cw2*0.42, r.y - chh*0.14, cw2*0.16, chh*0.12);
+      cx.fillRect(sx + cw2*0.26, r.y - chh*0.14, cw2*0.16, chh*0.12);
+    } else if (s.kind === 'n'){
+      const rr = Math.max(4, r.w * 0.13);
+      cx.beginPath(); cx.arc(sx, r.y - rr*1.2, rr, 0, Math.PI*2);
+      cx.fillStyle = '#F0149C'; cx.fill();
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2; cx.stroke();
+      if (r.p > 0.15){
+        cx.font = rr*1.2 + 'px serif';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText('🎧', sx, r.y - rr*1.15);
+      }
+    } else {
+      const rr = Math.max(5, r.w * 0.14);
+      cx.imageSmoothingEnabled = false;
+      cx.fillStyle = '#F0149C';
+      cx.fillRect(sx - rr, r.y - rr*2.2, rr*2, rr*2);
+      if (FACES[s.fi]) cx.drawImage(FACES[s.fi], sx - rr + 2, r.y - rr*2.2 + 2, rr*2 - 4, rr*2 - 4);
+      cx.imageSmoothingEnabled = true;
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
+      cx.strokeRect(sx - rr, r.y - rr*2.2, rr*2, rr*2);
+    }
+  }
+  /* nitro speedlines */
+  if (DRV.boost > 0 && !reduceMotion){
+    cx.strokeStyle = 'rgba(240,20,156,.45)';
+    cx.lineWidth = 3;
+    for (let l=0;l<7;l++){
+      const a = Math.random()*Math.PI*2, rr = Math.min(W,H)*0.55;
+      cx.beginPath();
+      cx.moveTo(W/2 + Math.cos(a)*rr*0.5, H/2 + Math.sin(a)*rr*0.5);
+      cx.lineTo(W/2 + Math.cos(a)*rr, H/2 + Math.sin(a)*rr);
+      cx.stroke();
+    }
+  }
+  /* player car */
+  const pcx = W/2, pcy = H - Math.max(46, H*0.09);
+  const carW = Math.min(W*0.24, 190), carH = carW*0.5;
+  const steerTilt = ((DRV.kL?-1:0)+(DRV.kR?1:0)+DRV.touch) * 0.09 + Math.sin(performance.now()/70)*0.008*(DRV.speed/DRV.max);
+  cx.save();
+  cx.translate(pcx, pcy);
+  cx.rotate(steerTilt + (DRV.crashT > 0 ? Math.sin(performance.now()/40)*0.12 : 0));
+  cx.fillStyle = 'rgba(0,0,0,.3)';
+  cx.beginPath(); cx.ellipse(0, carH*0.42, carW*0.52, carH*0.14, 0, 0, Math.PI*2); cx.fill();
+  /* wheels */
+  cx.fillStyle = '#111114';
+  cx.fillRect(-carW*0.5, carH*0.05, carW*0.18, carH*0.34);
+  cx.fillRect(carW*0.32, carH*0.05, carW*0.18, carH*0.34);
+  /* body */
+  cx.fillStyle = DRV.crashT > 0 && Math.floor(performance.now()/80)%2 ? '#FF62BE' : '#F0149C';
+  cx.beginPath();
+  if (cx.roundRect) cx.roundRect(-carW*0.46, -carH*0.42, carW*0.92, carH*0.8, carH*0.2);
+  else cx.rect(-carW*0.46, -carH*0.42, carW*0.92, carH*0.8);
+  cx.fill();
+  cx.strokeStyle = '#111114'; cx.lineWidth = 3; cx.stroke();
+  /* cockpit */
+  cx.fillStyle = '#111114';
+  cx.beginPath();
+  if (cx.roundRect) cx.roundRect(-carW*0.24, -carH*0.38, carW*0.48, carH*0.3, carH*0.1);
+  else cx.rect(-carW*0.24, -carH*0.38, carW*0.48, carH*0.3);
+  cx.fill();
+  /* slash on hood */
+  cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(4, carW*0.045); cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(carW*0.07, -carH*0.02); cx.lineTo(-carW*0.07, carH*0.3); cx.stroke();
+  /* tail lights */
+  cx.fillStyle = '#FBF9F2';
+  cx.fillRect(-carW*0.42, carH*0.22, carW*0.12, carH*0.1);
+  cx.fillRect(carW*0.30, carH*0.22, carW*0.12, carH*0.1);
+  /* nitro flames */
+  if (DRV.boost > 0){
+    cx.fillStyle = 'rgba(240,20,156,.8)';
+    const fl = carH*(0.3 + Math.random()*0.35);
+    cx.beginPath();
+    cx.moveTo(-carW*0.18, carH*0.4); cx.lineTo(-carW*0.1, carH*0.4 + fl); cx.lineTo(-carW*0.02, carH*0.4);
+    cx.moveTo(carW*0.02, carH*0.4); cx.lineTo(carW*0.1, carH*0.4 + fl*0.8); cx.lineTo(carW*0.18, carH*0.4);
+    cx.fill();
+  }
+  cx.restore();
+  /* particles (txt popups + confetti) */
+  for (const p of parts){
+    cx.globalAlpha = Math.max(0, 1 - p.t/p.life);
+    if (p.kind === 'txt'){
+      cx.fillStyle = p.c;
+      cx.font = '700 16px "Space Mono", monospace';
+      cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.fillText(p.text, p.x, p.y);
+    } else if (p.kind === 'rect' || p.kind === 'spark'){
+      cx.fillStyle = p.c;
+      cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
+    }
+  }
+  cx.globalAlpha = 1;
+}
+/* drive controls */
+addEventListener('keydown', e => {
+  if (!DRV.on) return;
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') DRV.kL = true;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') DRV.kR = true;
+  if (e.code === 'Space' || e.code === 'ShiftLeft'){ e.preventDefault(); DRV.nHold = true; }
+});
+addEventListener('keyup', e => {
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') DRV.kL = false;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') DRV.kR = false;
+  if (e.code === 'Space' || e.code === 'ShiftLeft') DRV.nHold = false;
 });
 
 /* ================= GLITCH DIALOGS ================= */
@@ -1919,9 +2415,14 @@ function draw(dt){
 let lastT = performance.now();
 function frame(t){
   const dt = Math.min(0.033, (t-lastT)/1000); lastT = t;
-  stepGame(dt);
-  stepParts(dt);
-  draw(dt);
+  if (DRV.on){
+    stepDrive(dt);
+    if (DRV.on) drawDrive(dt);
+  } else {
+    stepGame(dt);
+    stepParts(dt);
+    draw(dt);
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
