@@ -107,6 +107,16 @@
   #nitrobtn:active{transform:translate(3px,3px); box-shadow:0 0 0}
   #drivehint{position:fixed; left:16px; bottom:max(18px,env(safe-area-inset-bottom)); z-index:11;
     font-family:var(--mono); font-size:13px; color:var(--dim); line-height:1.6; pointer-events:none}
+  #wasted{position:fixed; inset:0; z-index:14; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:14px; background:rgba(242,239,230,.88); backdrop-filter:blur(6px)}
+  #wastedimg{width:min(46vw,220px); image-rendering:pixelated; border:4px solid var(--ink);
+    box-shadow:8px 8px 0 var(--pink); transform:rotate(-3deg);
+    animation:wshake .3s linear infinite}
+  @keyframes wshake{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+  #wastedtxt{font-family:var(--pxf); font-size:clamp(22px,6vw,44px); color:var(--pink);
+    text-shadow:4px 4px 0 rgba(17,17,20,.3); animation:blink .35s steps(1) infinite}
+  #wastedsub{font-family:var(--pxf); font-size:clamp(13px,3vw,20px); color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){ #wastedimg,#wastedtxt{animation:none} }
   @media (max-width:640px){
     #nitrobtn{width:78px; height:78px; font-size:10px}
     #drivehint{display:none}
@@ -464,6 +474,7 @@
 
 <!-- DRIVE HUD -->
 <div id="dhud" class="hidden">
+  <span class="pill" id="dlives"></span>
   <span class="pill" id="dtimepill">⏱ <b id="dtime">60</b>s</span>
   <span class="pill"><b id="dspd">0</b> km/h</span>
   <span class="pill">₹<b id="dcr">0</b> Cr</span>
@@ -474,6 +485,13 @@
   <button id="nitrobtn">NITRO 🎧</button>
 </div>
 <div id="drivehint" class="hidden">← → steer · hold SPACE = nitro<br>🎧 fills nitro · dodge boring corp</div>
+
+<!-- CRASH OUT -->
+<div id="wasted" class="hidden">
+  <img id="wastedimg" alt="pixel aman laughing">
+  <div id="wastedtxt">HAHAHAHA</div>
+  <div id="wastedsub">GAME OVER</div>
+</div>
 
 <!-- DRIVE OVER -->
 <div class="panelbg hidden" id="dover">
@@ -961,20 +979,13 @@ function jump(){
 }
 cv.addEventListener('pointerdown', e => {
   if (DRV.on){
-    DRV.touchX = Math.max(-1.3, Math.min(1.3, (e.clientX - innerWidth/2)/(innerWidth*0.3)));
+    laneMove(e.clientX < innerWidth/2 ? -1 : 1);
     return;
   }
   if (!$('over').classList.contains('hidden')) return;
   if (!$('pitch').classList.contains('hidden')) return;
   jump();
 });
-cv.addEventListener('pointermove', e => {
-  if (DRV.on && DRV.touchX !== null){
-    DRV.touchX = Math.max(-1.3, Math.min(1.3, (e.clientX - innerWidth/2)/(innerWidth*0.3)));
-  }
-});
-cv.addEventListener('pointerup', () => { DRV.touchX = null; DRV.touch = 0; });
-cv.addEventListener('pointercancel', () => { DRV.touchX = null; DRV.touch = 0; });
 addEventListener('keydown', e => {
   if ((e.code === 'Space' || e.code === 'ArrowUp') && !e.repeat){
     e.preventDefault();
@@ -1381,7 +1392,7 @@ function toHome(){
   DRV.on = false;
   clearInterval(DRV.beatTimer);
   if (DRV.eng) DRV.eng.g.gain.value = 0;
-  ['over','sover','pitch','shark','sim','simover','dover','dhud','nitrowrap','drivehint','rlives','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  ['over','sover','pitch','shark','sim','simover','dover','dhud','nitrowrap','drivehint','wasted','rlives','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
   $('hudtop').classList.remove('hidden');
   $('intro').classList.remove('hidden');
 }
@@ -1617,11 +1628,14 @@ $('simshare').addEventListener('click', async () => {
 });
 
 /* ================= NITRO DRIVE (pseudo-3d racer) ================= */
+const D_LANES = [-0.72, -0.24, 0.24, 0.72];
 const DRV = {
-  on:false, pos:0, speed:0, max:56, px:0, kL:false, kR:false, touch:0, touchX:null,
+  on:false, pos:0, speed:0, max:56, px:D_LANES[1], lane:1, kL:false, kR:false, touch:0, touchX:null,
   timeLeft:60, ot:0, cr:0, nitro:40, nHold:false, boost:0, crashT:0, count:0, lastN:-1,
-  streak:0, cars:[], picks:[], topSpd:0, lastCk:0, beatT:0, beatIdx:0, beatTimer:null, eng:null,
+  streak:0, lives:3, inv:0, cars:[], picks:[], hurdles:[], topSpd:0, lastCk:0,
+  beatT:0, beatIdx:0, beatTimer:null, eng:null, dead:false,
 };
+const HURDLE_LABELS = ['9-5','EMI','DOUBT','MEETING','EXCUSES'];
 const DRV_N = 70;
 function dCurve(i){ return Math.sin(i/47)*1.9 + Math.sin(i/113)*1.4; }
 function dHill(i){ return Math.sin(i/33)*90 + Math.sin(i/85)*150; }
@@ -1640,17 +1654,25 @@ const D_ROASTS = [
 let driveIntroShown = false;
 function startDrive(){
   unlockAudio();
-  Object.assign(DRV, { on:true, pos:0, speed:0, px:0, timeLeft:60, ot:0, cr:0,
+  Object.assign(DRV, { on:true, pos:0, speed:0, px:D_LANES[1], lane:1, timeLeft:60, ot:0, cr:0,
     nitro:40, nHold:false, boost:0, crashT:0, topSpd:0, lastCk:0, beatIdx:0,
-    count:3.0, lastN:-1, streak:0, touchX:null, cars:[], picks:[] });
-  for (let c=0;c<9;c++){
-    DRV.cars.push({ p: 30 + c*22 + Math.random()*10, lane:[-0.55,0,0.55][c%3],
-      spd: 22 + Math.random()*8 });
+    count:3.0, lastN:-1, streak:0, lives:3, inv:0, dead:false, touchX:null,
+    cars:[], picks:[], hurdles:[] });
+  for (let c=0;c<7;c++){
+    DRV.cars.push({ p: 26 + c*16 + Math.random()*6, lane: Math.floor(Math.random()*4),
+      spd: 21 + Math.random()*8 });
   }
-  for (let c=0;c<14;c++){
-    DRV.picks.push({ p: 20 + c*19 + Math.random()*12, lane:[-0.5,0,0.5][Math.floor(Math.random()*3)],
+  for (let c=0;c<10;c++){
+    DRV.hurdles.push({ p: 20 + c*13 + Math.random()*5, lane: Math.floor(Math.random()*4),
+      type: Math.random() < 0.6 ? 'cone' : 'bar',
+      label: HURDLE_LABELS[Math.floor(Math.random()*HURDLE_LABELS.length)] });
+  }
+  for (let c=0;c<12;c++){
+    DRV.picks.push({ p: 24 + c*15 + Math.random()*8, lane: Math.floor(Math.random()*4),
       kind: Math.random() < 0.55 ? 'n' : 'card', fi: Math.floor(Math.random()*5), dead:false });
   }
+  drawDriveLives();
+  $('wasted').classList.add('hidden');
   parts.length = 0;
   ['intro','over','sover','pitch','shark','sim','simover','dover','raise'].forEach(id => $(id).classList.add('hidden'));
   $('hudtop').classList.add('hidden');
@@ -1692,8 +1714,46 @@ function startDrive(){
   }
 }
 $('drivebtn').addEventListener('click', startDrive);
+function drawDriveLives(){
+  const el = $('dlives');
+  if (!FACE0URL){ el.innerHTML = '<b>' + '❤'.repeat(Math.max(0,DRV.lives)) + '</b>'; return; }
+  el.style.display = 'inline-flex'; el.style.gap = '5px'; el.style.alignItems = 'center';
+  el.innerHTML = [0,1,2].map(i =>
+    '<img class="lifepix' + (i < DRV.lives ? '' : ' lost') + '" src="' + FACE0URL + '" alt="life">'
+  ).join('');
+}
+function laneMove(dir){
+  if (!DRV.on || DRV.dead || DRV.count > 0) return;
+  const nl = Math.max(0, Math.min(3, DRV.lane + dir));
+  if (nl !== DRV.lane){ DRV.lane = nl; sfx.ui(); }
+}
+function crashHit(what){
+  if (DRV.inv > 0 || DRV.dead) return;
+  DRV.lives--;
+  drawDriveLives();
+  DRV.streak = 0;
+  DRV.crashT = 1.0;
+  DRV.speed *= 0.45;
+  G.shake = reduceMotion ? 0 : 18;
+  sfx.die();
+  if (DRV.lives <= 0){ crashOut(); return; }
+  DRV.inv = 2.0;
+  judge('💥 ' + what);
+}
+function crashOut(){
+  DRV.dead = true;
+  if (FACE0URL) $('wastedimg').src = FACE0URL;
+  $('wasted').classList.remove('hidden');
+  sfx.die();
+  setTimeout(() => { blipNow(300,120,0.1,0.3,'square'); }, 200);
+  setTimeout(() => {
+    $('wasted').classList.add('hidden');
+    endDrive();
+  }, 2000);
+}
 function stepDrive(dt){
   if (!DRV.on) return;
+  if (DRV.dead) return;
   /* 3-2-1-GO countdown */
   if (DRV.count > 0){
     DRV.count -= dt;
@@ -1709,32 +1769,24 @@ function stepDrive(dt){
   if (DRV.timeLeft <= 0){ endDrive(); return; }
   $('dtime').textContent = Math.ceil(DRV.timeLeft);
   /* speed */
-  const steer = (DRV.kL ? -1 : 0) + (DRV.kR ? 1 : 0) + DRV.touch;
   DRV.boost = (DRV.nHold && DRV.nitro > 0) ? 1 : Math.max(0, DRV.boost - dt*3);
   if (DRV.nHold && DRV.nitro > 0) DRV.nitro = Math.max(0, DRV.nitro - dt*26);
   const targetMax = DRV.max * (DRV.boost > 0 ? 1.35 : 1);
-  const offroad = Math.abs(DRV.px) > 1.02;
   if (DRV.crashT > 0){ DRV.crashT -= dt; }
-  const cap = offroad ? DRV.max*0.35 : targetMax;
-  DRV.speed += (cap - DRV.speed) * Math.min(1, dt * (DRV.speed < cap ? 0.55 : 3));
+  if (DRV.inv > 0){ DRV.inv -= dt; }
+  DRV.speed += (targetMax - DRV.speed) * Math.min(1, dt * (DRV.speed < targetMax ? 0.6 : 3));
   DRV.pos += DRV.speed * dt;
   const kmh = Math.round(DRV.speed * 6.2 * (DRV.boost > 0 ? 1.1 : 1));
   DRV.topSpd = Math.max(DRV.topSpd, kmh);
   $('dspd').textContent = kmh;
-  if (offroad && !reduceMotion) G.shake = Math.max(G.shake, 4);
-  /* steering: analog drag on touch, keys on desktop, + centrifugal */
-  if (DRV.touchX !== null){
-    DRV.px += (DRV.touchX - DRV.px) * Math.min(1, dt*7);
-  } else {
-    DRV.px += steer * dt * 1.7 * (0.45 + DRV.speed/DRV.max*0.65);
-  }
-  DRV.px -= dCurve2(Math.floor(DRV.pos)) * (DRV.speed/DRV.max) * dt * 1.1;
-  DRV.px = Math.max(-1.4, Math.min(1.4, DRV.px));
-  /* drift sparks on hard steering at speed */
-  const steerAmt = DRV.touchX !== null ? (DRV.touchX - DRV.px)*2 : steer;
-  if (Math.abs(steerAmt) > 0.6 && DRV.speed > DRV.max*0.65 && !reduceMotion && Math.random() < 0.6){
-    parts.push({ kind:'spark', x: W/2 + (steerAmt>0?-1:1)*Math.min(W*0.12,90),
-      y: H - Math.max(40, H*0.07), vx:(Math.random()-0.5)*120 - steerAmt*160,
+  /* lane-snap steering: buttery ease to target lane */
+  const laneTarget = D_LANES[DRV.lane];
+  const laneDelta = laneTarget - DRV.px;
+  DRV.px += laneDelta * Math.min(1, dt*9);
+  /* drift sparks on lane change at speed */
+  if (Math.abs(laneDelta) > 0.12 && DRV.speed > DRV.max*0.6 && !reduceMotion && Math.random() < 0.5){
+    parts.push({ kind:'spark', x: W/2 + (laneDelta>0?-1:1)*Math.min(W*0.1,80),
+      y: H - Math.max(40, H*0.07), vx:(Math.random()-0.5)*120 - laneDelta*300,
       vy: 40+Math.random()*90, life:.3, t:0, r:2.5, c:'#F0149C' });
   }
   /* checkpoint */
@@ -1745,29 +1797,41 @@ function stepDrive(dt){
     sfx.ding();
     confetti(W/2, H*0.3, 16);
   }
-  /* traffic */
+  /* traffic: lane-locked, predictable */
   for (const car of DRV.cars){
     car.p += car.spd * dt;
     const rel = car.p - DRV.pos;
     if (rel < -3){
       DRV.ot++; $('dot').textContent = DRV.ot;
       DRV.streak++;
-      if (Math.abs(DRV.px - car.lane) < 0.6){
+      if (Math.abs(car.lane - DRV.lane) === 1){
         DRV.nitro = Math.min(100, DRV.nitro + 10);
         parts.push({ kind:'txt', text:'CLOSE! +nitro', x:W/2, y:H*0.5, vx:0, vy:-70, life:.6, t:0, r:0, c:'#F0149C' });
       }
       if (DRV.streak > 0 && DRV.streak % 5 === 0){ judge('OVERTAKE x' + DRV.streak + ' 🔥'); sfx.ding(); }
-      car.p = DRV.pos + 55 + Math.random()*45;
-      car.lane = [-0.55,0,0.55][Math.floor(Math.random()*3)];
+      car.p = DRV.pos + 50 + Math.random()*40;
+      car.lane = Math.floor(Math.random()*4);
       sfx.coin(2);
-    } else if (rel < 1.4 && rel > -0.3 && Math.abs(DRV.px - car.lane) < 0.34 && DRV.crashT <= 0){
-      DRV.crashT = 1.2;
-      DRV.streak = 0;
-      DRV.speed *= 0.3;
-      G.shake = reduceMotion ? 0 : 18;
-      sfx.die();
-      judge('💥 BORING CORP SEDAN');
-      car.p = DRV.pos + 40 + Math.random()*30;
+    } else if (rel < 0.9 && rel > -0.1 && car.lane === DRV.lane){
+      crashHit('BORING CORP SEDAN');
+      if (DRV.dead) return;
+      car.p = DRV.pos + 45 + Math.random()*30;
+      car.lane = Math.floor(Math.random()*4);
+    }
+  }
+  /* hurdles: static roadblocks */
+  for (const h of DRV.hurdles){
+    const rel = h.p - DRV.pos;
+    if (rel < -2){
+      h.p = DRV.pos + 60 + Math.random()*50;
+      h.lane = Math.floor(Math.random()*4);
+      h.type = Math.random() < 0.6 ? 'cone' : 'bar';
+      h.label = HURDLE_LABELS[Math.floor(Math.random()*HURDLE_LABELS.length)];
+    } else if (rel < 0.7 && rel > -0.1 && h.lane === DRV.lane){
+      crashHit(h.type === 'bar' ? h.label + ' BARRIER' : 'CONE');
+      if (DRV.dead) return;
+      h.p = DRV.pos + 55 + Math.random()*40;
+      h.lane = Math.floor(Math.random()*4);
     }
   }
   /* pickups */
@@ -1775,11 +1839,11 @@ function stepDrive(dt){
     const rel = pk.p - DRV.pos;
     if (rel < -2 || pk.dead){
       pk.p = DRV.pos + 45 + Math.random()*55;
-      pk.lane = [-0.5,0,0.5][Math.floor(Math.random()*3)];
+      pk.lane = Math.floor(Math.random()*4);
       pk.kind = Math.random() < 0.55 ? 'n' : 'card';
       pk.fi = Math.floor(Math.random()*5);
       pk.dead = false;
-    } else if (rel < 1.1 && rel > -0.2 && Math.abs(DRV.px - pk.lane) < 0.3){
+    } else if (rel < 1.0 && rel > -0.2 && pk.lane === DRV.lane){
       pk.dead = true;
       if (pk.kind === 'n'){
         DRV.nitro = Math.min(100, DRV.nitro + 34);
@@ -2103,18 +2167,16 @@ function drawDrive(dt){
 /* ===== drive engine v2: true pseudo-3d projection, crest clipping ===== */
 const SEG_N = 62;
 function dCurve2(i){ return Math.sin(i/38)*1.0 + Math.sin(i/91)*0.7; }
-function dHill2(i){ return Math.sin(i/42)*1.9 + Math.sin(i/23)*0.55; }
+function dHill2(i){ return Math.sin(i/42)*1.0 + Math.sin(i/23)*0.3; }
 function drawDrive2(dt){
   cx.setTransform(DPR,0,0,DPR,0,0);
   if (G.shake > 0.3){
     cx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
     G.shake *= Math.pow(0.0005, dt);
   }
-  const bankSteer = DRV.touchX !== null
-    ? Math.max(-1, Math.min(1, (DRV.touchX - DRV.px)*1.6))
-    : ((DRV.kL?-1:0)+(DRV.kR?1:0));
+  const bankSteer = Math.max(-1, Math.min(1, (D_LANES[DRV.lane] - DRV.px)*3));
   if (!reduceMotion){
-    const bank = (bankSteer*0.5 + dCurve2(Math.floor(DRV.pos))*0.5) * (DRV.speed/DRV.max);
+    const bank = (bankSteer*0.5 + dCurve2(Math.floor(DRV.pos))*0.4) * (DRV.speed/DRV.max);
     cx.translate(W/2, H); cx.rotate(bank*0.04); cx.translate(-W/2, -H);
   }
   const portrait = W < H;
@@ -2150,7 +2212,7 @@ function drawDrive2(dt){
   const base = Math.floor(DRV.pos), frac = DRV.pos - base;
   const camH = 2.6, K = H*0.34;
   const camY = camH + dHill2(base) + (dHill2(base+1)-dHill2(base))*frac;
-  const RW = W*(portrait ? 0.6 : 0.4);
+  const RW = W*(portrait ? 0.8 : 0.54);
   const GAIN = 0.55;
   const T = dCurve2(base)*GAIN;
   const rows = [];
@@ -2192,10 +2254,10 @@ function drawDrive2(dt){
     cx.moveTo(prev.x - prev.w, prev.y); cx.lineTo(prev.x + prev.w, prev.y);
     cx.lineTo(r.x + r.w, r.y); cx.lineTo(r.x - r.w, r.y);
     cx.closePath(); cx.fill();
-    /* lane dashes */
+    /* lane dashes: 3 lines = 4 lanes */
     if (r.i % 3 !== 0){
       cx.fillStyle = 'rgba(251,249,242,.7)';
-      for (const ln of [-0.36, 0.36]){
+      for (const ln of [-0.5, 0, 0.5]){
         cx.beginPath();
         cx.moveTo(prev.x + ln*prev.w - prev.w*0.02, prev.y);
         cx.lineTo(prev.x + ln*prev.w + prev.w*0.02, prev.y);
@@ -2242,12 +2304,16 @@ function drawDrive2(dt){
     const rel = pk.p - DRV.pos;
     if (!pk.dead && rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:pk.kind, lane:pk.lane, fi:pk.fi });
   }
+  for (const h of DRV.hurdles){
+    const rel = h.p - DRV.pos;
+    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:h.type, lane:h.lane, label:h.label });
+  }
   spr.sort((a,b) => b.rel - a.rel);
   for (const sp of spr){
     const n = Math.max(1, Math.min(SEG_N, Math.floor(sp.rel + frac)));
     const r = rows[n];
     if (!r || !r.vis) continue;
-    const sx = r.x + sp.lane * r.w;
+    const sx = r.x + D_LANES[sp.lane] * r.w;
     if (sp.kind === 'car'){
       const cw2 = r.w * 0.4, chh = cw2 * 0.64;
       cx.fillStyle = 'rgba(0,0,0,.25)';
@@ -2272,6 +2338,46 @@ function drawDrive2(dt){
       cx.fillStyle = '#F0149C';
       cx.fillRect(sx - cw2*0.44, r.y - chh*0.1, cw2*0.15, chh*0.09);
       cx.fillRect(sx + cw2*0.29, r.y - chh*0.1, cw2*0.15, chh*0.09);
+    } else if (sp.kind === 'cone'){
+      const ch2 = Math.max(5, r.w * 0.11);
+      cx.fillStyle = 'rgba(0,0,0,.2)';
+      cx.beginPath(); cx.ellipse(sx, r.y + 1, ch2*0.7, ch2*0.16, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = '#F0149C';
+      cx.beginPath();
+      cx.moveTo(sx, r.y - ch2*1.5); cx.lineTo(sx - ch2*0.62, r.y); cx.lineTo(sx + ch2*0.62, r.y);
+      cx.closePath(); cx.fill();
+      cx.strokeStyle = '#111114'; cx.lineWidth = 1.6; cx.stroke();
+      cx.fillStyle = '#FBF9F2';
+      cx.fillRect(sx - ch2*0.4, r.y - ch2*0.85, ch2*0.8, ch2*0.26);
+      cx.fillStyle = '#111114';
+      cx.fillRect(sx - ch2*0.72, r.y - ch2*0.08, ch2*1.44, ch2*0.14);
+    } else if (sp.kind === 'bar'){
+      const bw4 = Math.max(8, r.w * 0.24), bh4 = bw4*0.42;
+      cx.fillStyle = 'rgba(0,0,0,.2)';
+      cx.beginPath(); cx.ellipse(sx, r.y + 1, bw4*0.6, bh4*0.2, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = '#111114';
+      cx.fillRect(sx - bw4*0.46, r.y - bh4*1.4, bw4*0.08, bh4*1.4);
+      cx.fillRect(sx + bw4*0.38, r.y - bh4*1.4, bw4*0.08, bh4*1.4);
+      cx.save();
+      cx.beginPath(); cx.rect(sx - bw4/2, r.y - bh4*2.1, bw4, bh4); cx.clip();
+      cx.fillStyle = '#F0149C'; cx.fillRect(sx - bw4/2, r.y - bh4*2.1, bw4, bh4);
+      cx.fillStyle = '#FBF9F2';
+      for (let st = -3; st < 4; st++){
+        cx.save();
+        cx.translate(sx + st*bw4*0.28, r.y - bh4*1.6);
+        cx.rotate(-0.5);
+        cx.fillRect(-bw4*0.05, -bh4, bw4*0.1, bh4*2);
+        cx.restore();
+      }
+      cx.restore();
+      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
+      cx.strokeRect(sx - bw4/2, r.y - bh4*2.1, bw4, bh4);
+      if (r.s > 0.22 && sp.label){
+        cx.fillStyle = '#111114';
+        cx.font = '700 ' + Math.max(6, bh4*0.5) + 'px "Space Mono", monospace';
+        cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText(sp.label, sx, r.y - bh4*2.55);
+      }
     } else if (sp.kind === 'n'){
       const rr2 = Math.max(4, r.w * 0.12);
       const bob = Math.sin(performance.now()/180 + sp.rel)*rr2*0.3;
@@ -2295,6 +2401,10 @@ function drawDrive2(dt){
     }
   }
   /* player car: flat-shaded 3d with animated wheels + cabin parallax */
+  const invBlink2 = DRV.inv > 0 && Math.floor(performance.now()/90) % 2 === 0;
+  if (invBlink2){
+    /* skip car body while blinking invincible */
+  } else {
   const pcx2 = W/2, pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095));
   const carW = Math.min(W*(portrait ? 0.42 : 0.24), 215), carH = carW*0.56;
   const tilt = bankSteer*0.11 + Math.sin(performance.now()/70)*0.01*(DRV.speed/DRV.max)
@@ -2362,6 +2472,7 @@ function drawDrive2(dt){
   rrp(-carW*0.44, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
   rrp(carW*0.30, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
   cx.restore();
+  }
   /* particles */
   for (const p of parts){
     cx.globalAlpha = Math.max(0, 1 - p.t/p.life);
@@ -2381,13 +2492,11 @@ function drawDrive2(dt){
 /* drive controls */
 addEventListener('keydown', e => {
   if (!DRV.on) return;
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') DRV.kL = true;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') DRV.kR = true;
+  if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat) laneMove(-1);
+  if ((e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat) laneMove(1);
   if (e.code === 'Space' || e.code === 'ShiftLeft'){ e.preventDefault(); DRV.nHold = true; }
 });
 addEventListener('keyup', e => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') DRV.kL = false;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') DRV.kR = false;
   if (e.code === 'Space' || e.code === 'ShiftLeft') DRV.nHold = false;
 });
 
