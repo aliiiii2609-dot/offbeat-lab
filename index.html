@@ -1640,7 +1640,7 @@ function startDrive(){
   unlockAudio();
   Object.assign(DRV, { on:true, pos:0, speed:0, px:0, timeLeft:60, ot:0, cr:0,
     nitro:40, nHold:false, boost:0, crashT:0, topSpd:0, lastCk:0, beatIdx:0,
-    count:3.6, lastN:-1, streak:0, touchX:null, cars:[], picks:[] });
+    count:3.0, lastN:-1, streak:0, touchX:null, cars:[], picks:[] });
   for (let c=0;c<9;c++){
     DRV.cars.push({ p: 30 + c*22 + Math.random()*10, lane:[-0.55,0,0.55][c%3],
       spd: 22 + Math.random()*8 });
