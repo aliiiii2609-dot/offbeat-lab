@@ -188,8 +188,10 @@
     border:1px solid var(--faint); border-radius:999px; padding:7px 13px; color:var(--ink);
     font-variant-numeric:tabular-nums}
   .pill b{color:var(--pink); font-weight:700}
-  .lifepix{width:17px; height:17px; image-rendering:pixelated; vertical-align:middle;
-    margin:-2px 1px; transition:opacity .2s}
+  #rlives{display:inline-flex; align-items:center; gap:5px; padding:5px 10px}
+  .lifepix{width:22px; height:22px; image-rendering:pixelated; display:block;
+    border:1.5px solid var(--ink); background:var(--panel); border-radius:3px;
+    transition:opacity .2s, filter .2s}
   .lifepix.lost{filter:grayscale(1); opacity:.25}
   /* crore progress */
   #raise{position:fixed; left:50%; transform:translateX(-50%); top:max(14px,env(safe-area-inset-top));
@@ -686,6 +688,7 @@ FACE_SRCS.forEach((src, i) => {
     if (i === 0){
       FACE0URL = c.toDataURL('image/png');
       document.querySelectorAll('.cardpix').forEach(el => el.src = FACE0URL);
+      if (G.on) drawRunLives();
     }
   };
   im.src = src;
@@ -1037,7 +1040,10 @@ function checkMilestones(){
 }
 function drawRunLives(){
   const el = $('rlives');
-  if (!FACE0URL){ el.textContent = '❤'.repeat(G.lives); return; }
+  if (!FACE0URL){
+    el.innerHTML = '<b>' + '❤'.repeat(Math.max(0, G.lives)) + '·'.repeat(Math.max(0, 3 - G.lives)) + '</b>';
+    return;
+  }
   el.innerHTML = [0,1,2].map(i =>
     '<img class="lifepix' + (i < G.lives ? '' : ' lost') + '" src="' + FACE0URL + '" alt="life">'
   ).join('');
