@@ -119,7 +119,10 @@
   @keyframes wshake{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
   #wastedtxt{font-family:var(--pxf); font-size:clamp(22px,6vw,44px); color:var(--pink);
     text-shadow:4px 4px 0 rgba(17,17,20,.3); animation:blink .35s steps(1) infinite}
-  #wastedsub{font-family:var(--pxf); font-size:clamp(13px,3vw,20px); color:var(--ink)}
+  #wdist{font-family:var(--pxf); font-size:clamp(20px,5.5vw,40px); color:var(--ink)}
+  #wbest{font-family:var(--mono); font-size:clamp(14px,2.6vw,18px); color:var(--dim)}
+  #dscorepill{font-family:var(--pxf)}
+  #dscore{font-size:clamp(14px,3vw,20px)}
   @media (prefers-reduced-motion:reduce){ #wastedimg,#wastedtxt{animation:none} }
   @media (max-width:640px){
     #nitrobtn{width:78px; height:78px; font-size:10px}
@@ -477,11 +480,7 @@
 
 <!-- DRIVE HUD -->
 <div id="dhud" class="hidden">
-  <span class="pill" id="dlives"></span>
-  <span class="pill" id="dtimepill">⏱ <b id="dtime">60</b>s</span>
-  <span class="pill" style="display:none"><b id="dspd">0</b></span>
-  <span class="pill" style="display:none"><b id="dcr">0</b></span>
-  <span class="pill" style="display:none"><b id="dot">0</b></span>
+  <span class="pill" id="dscorepill"><b id="dscore">0</b></span>
 </div>
 <div id="nitrowrap" class="hidden">
   <div id="nbar"><div id="nfill"></div></div>
@@ -493,7 +492,8 @@
 <div id="wasted" class="hidden">
   <img id="wastedimg" alt="pixel aman laughing">
   <div id="wastedtxt">HAHAHAHA</div>
-  <div id="wastedsub">GAME OVER</div>
+  <div id="wdist">0.00 km</div>
+  <div id="wbest">best 0.00 km</div>
 </div>
 
 <!-- DRIVE OVER -->
@@ -981,8 +981,8 @@ function jump(){
   }
 }
 cv.addEventListener('pointerdown', e => {
-  if (DRV.on){
-    laneMove(e.clientX < innerWidth/2 ? -1 : 1);
+  if (typeof DR !== 'undefined' && DR.on){
+    if (DR.oil <= 0) drLaneMove(e.clientX < innerWidth/2 ? -1 : 1);
     return;
   }
   if (!$('over').classList.contains('hidden')) return;
@@ -1392,9 +1392,7 @@ function toHome(){
   S.on = false; S.live = false; clearInterval(S.timer);
   closeDlg();
   SIM.on = false;
-  DRV.on = false;
-  clearInterval(DRV.beatTimer);
-  if (DRV.eng) DRV.eng.g.gain.value = 0;
+  if (typeof DR !== 'undefined') drStop();
   ['over','sover','pitch','shark','sim','simover','dover','dhud','nitrowrap','drivehint','wasted','rlives','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
   $('hudtop').classList.remove('hidden');
   $('intro').classList.remove('hidden');
@@ -1630,811 +1628,386 @@ $('simshare').addEventListener('click', async () => {
   }catch(e){}
 });
 
-/* ================= NITRO DRIVE (pseudo-3d racer) ================= */
-const D_LANES = [-0.72, -0.24, 0.24, 0.72];
-const DRV = {
-  on:false, pos:0, speed:0, max:56, px:D_LANES[1], lane:1, kL:false, kR:false, touch:0, touchX:null,
-  timeLeft:60, ot:0, cr:0, nitro:40, nHold:false, boost:0, crashT:0, count:0, lastN:-1,
-  streak:0, lives:3, inv:0, cars:[], picks:[], hurdles:[], topSpd:0, lastCk:0,
-  beatT:0, beatIdx:0, beatTimer:null, eng:null, dead:false,
-  twFrom:0, twT0:0, queued:0, chain:0, lastGraze:0, ts:1, tsT:0, freeze:0,
+/* ================= OFF/BEAT DRIVE — clean rebuild ================= */
+/* one run · grazing economy · zones · authored chunks · fixed timestep */
+const DR_DT = 1/60;
+const DR_LANESETS = { 3:[-0.6,0,0.6], 4:[-0.72,-0.24,0.24,0.72], 5:[-0.82,-0.41,0,0.41,0.82] };
+const DR_ZONES = [
+  { at:0,   road:['#2B2B32','#26262C'], grass:['#EAE6D8','#E1DDCD'], sky:['#F8F5EB','#EFEBDD'], keyRoot:0 },
+  { at:40,  road:['#33302B','#2D2A26'], grass:['#E6DCC4','#DDD2B8'], sky:['#F6EFDD','#EDE3CB'], keyRoot:2 },
+  { at:120, road:['#26262E','#212129'], grass:['#D9DBE2','#CFD2DB'], sky:['#EDF0F6','#DFE4EE'], keyRoot:4 },
+];
+const DR_SCALE = [392, 440, 494, 587, 659, 784, 880, 988, 1175, 1319];
+/* authored chunks: len in segments, hz events at offsets, laneN required */
+const DR_CHUNKS = {
+  0: [ /* zone 1: static only, 4 lanes */
+    { d:1, n:4, len:7,  hz:[] },
+    { d:1, n:4, len:9,  hz:[{at:5, l:1, k:'cone'}] },
+    { d:1, n:4, len:9,  hz:[{at:5, l:2, k:'bar'}] },
+    { d:2, n:4, len:11, hz:[{at:4, l:0, k:'cone'},{at:8, l:3, k:'cone'}] },
+    { d:2, n:4, len:11, hz:[{at:4, l:2, k:'bar'},{at:8, l:1, k:'bar'}] },
+    { d:3, n:4, len:13, hz:[{at:3, l:1, k:'cone'},{at:7, l:2, k:'bar'},{at:11, l:1, k:'cone'}] },
+    { d:3, n:4, len:13, hz:[{at:3, l:0, k:'bar'},{at:7, l:1, k:'cone'},{at:11, l:3, k:'bar'}] },
+  ],
+  1: [ /* zone 2: construction, trucks merge, 3-lane pinches */
+    { d:1, n:4, len:7,  hz:[] },
+    { d:2, n:4, len:12, hz:[{at:5, l:0, k:'truck', to:1},{at:9, l:3, k:'cone'}] },
+    { d:3, n:4, len:12, hz:[{at:4, l:3, k:'truck', to:2},{at:9, l:0, k:'bar'}] },
+    { d:3, n:3, len:12, hz:[{at:4, l:1, k:'cone'},{at:9, l:0, k:'bar'}] },
+    { d:4, n:3, len:13, hz:[{at:3, l:2, k:'truck', to:1},{at:8, l:0, k:'cone'},{at:11, l:2, k:'cone'}] },
+    { d:4, n:4, len:13, hz:[{at:3, l:1, k:'truck', to:2},{at:8, l:0, k:'bar'},{at:11, l:3, k:'bar'}] },
+  ],
+  2: [ /* zone 3: wet city, 5 lanes, oil */
+    { d:1, n:5, len:7,  hz:[] },
+    { d:3, n:5, len:12, hz:[{at:4, l:2, k:'oil'},{at:8, l:1, k:'bar'},{at:8, l:3, k:'cone'}] },
+    { d:3, n:5, len:12, hz:[{at:4, l:1, k:'truck', to:2},{at:9, l:4, k:'cone'}] },
+    { d:4, n:5, len:13, hz:[{at:3, l:3, k:'oil'},{at:7, l:2, k:'truck', to:3},{at:11, l:0, k:'cone'}] },
+    { d:4, n:5, len:13, hz:[{at:3, l:0, k:'bar'},{at:6, l:2, k:'oil'},{at:10, l:1, k:'cone'},{at:10, l:4, k:'bar'}] },
+    { d:5, n:5, len:14, hz:[{at:3, l:1, k:'oil'},{at:6, l:3, k:'truck', to:2},{at:10, l:0, k:'bar'},{at:13, l:2, k:'cone'}] },
+  ],
 };
-const GRAZE_SCALE = [392, 440, 494, 587, 659, 784, 880, 988, 1175];
-const HURDLE_LABELS = ['9-5','EMI','DOUBT','MEETING','EXCUSES'];
-const DRV_N = 70;
-function dCurve(i){ return Math.sin(i/47)*1.9 + Math.sin(i/113)*1.4; }
-function dHill(i){ return Math.sin(i/33)*90 + Math.sin(i/85)*150; }
-const D_RANKS = [
-  [80,'NITRO RAJA 🏎️'],[60,'BOLDER THAN TRAFFIC ⚡'],[40,'sasta schumacher'],
-  [25,'indicator off, vibes on'],[10,'sunday driver 🐢'],[0,'gaadi seekh lo bhai'],
-];
-const D_ROASTS = [
-  [80,'the traffic filed a complaint. ekdum full send.'],
-  [60,'boring corp sedans are scared of you now.'],
-  [40,'fast, furious, thoda careful bhi.'],
-  [25,'signal tod diya par style mein. respect.'],
-  [10,'aaram se chalao bhai, jelly nahi gir jaaye.'],
-  [0,'the car ran YOU. run it back.'],
-];
-let driveIntroShown = false;
-function startDrive(){
+/* deterministic rng: daily seed + run number */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const DR = {
+  on:false, acc:0, pos:0, spd:0, laneN:4, lane:1, px:0,
+  twT:1, twFrom:0, queued:0, moved:false,
+  boost:35, hold:false, boosting:false, chain:0, sinceGraze:9, oil:0,
+  slow:0, freeze:0, dead:false,
+  score:0, zone:0, hazards:[], chunkEnd:0, hardRun:0, lastPick:-1,
+  rng:null, runs:0, best: store.get('dr-best', 0), bestHit:false,
+  eng:null, engB:null,
+};
+function drStart(){
   unlockAudio();
-  Object.assign(DRV, { on:true, pos:0, speed:0, px:D_LANES[1], lane:1, timeLeft:60, ot:0, cr:0,
-    nitro:40, nHold:false, boost:0, crashT:0, topSpd:0, lastCk:0, beatIdx:0,
-    count:3.0, lastN:-1, streak:0, lives:3, inv:0, dead:false, touchX:null,
-    twFrom:D_LANES[1], twT0:0, queued:0, chain:0, lastGraze:0, ts:1, tsT:0, freeze:0,
-    cars:[], picks:[], hurdles:[] });
-  for (let c=0;c<7;c++){
-    const ln = Math.floor(Math.random()*4);
-    DRV.cars.push({ p: 26 + c*16 + Math.random()*6, lane: ln, laneF: ln,
-      spd: 21 + Math.random()*8, mv: null, passed: false });
-  }
-  for (let c=0;c<10;c++){
-    DRV.hurdles.push({ p: 20 + c*13 + Math.random()*5, lane: Math.floor(Math.random()*4),
-      type: Math.random() < 0.6 ? 'cone' : 'bar',
-      label: HURDLE_LABELS[Math.floor(Math.random()*HURDLE_LABELS.length)] });
-  }
-  for (let c=0;c<12;c++){
-    DRV.picks.push({ p: 24 + c*15 + Math.random()*8, lane: Math.floor(Math.random()*4),
-      kind: Math.random() < 0.55 ? 'n' : 'card', fi: Math.floor(Math.random()*5), dead:false });
-  }
-  drawDriveLives();
-  $('wasted').classList.add('hidden');
-  parts.length = 0;
-  ['intro','over','sover','pitch','shark','sim','simover','dover','raise'].forEach(id => $(id).classList.add('hidden'));
+  DR.runs++;
+  const day = new Date();
+  const seed = day.getFullYear()*10000 + (day.getMonth()+1)*100 + day.getDate();
+  DR.rng = mulberry32(seed*97 + DR.runs);
+  Object.assign(DR, { on:true, acc:0, pos:0, spd:0, laneN:4, lane:1, px:DR_LANESETS[4][1],
+    twT:1, twFrom:0, queued:0, moved:false, boost:35, hold:false, boosting:false,
+    chain:0, sinceGraze:9, oil:0, slow:0, freeze:0, dead:false, score:0, zone:0,
+    hazards:[], chunkEnd:0, hardRun:0, lastPick:-1, bestHit:false });
+  /* onboarding: authored opening, teaches by placement */
+  DR.hazards.push({ p:8,  l:2, k:'cone', passed:false });   /* natural line grazes this */
+  DR.hazards.push({ p:15, l:1, k:'cone', passed:false });   /* forces first lane change */
+  DR.chunkEnd = 20;
+  ['intro','over','sover','pitch','shark','sim','simover','dover','wasted','raise'].forEach(id => $(id).classList.add('hidden'));
   $('hudtop').classList.add('hidden');
-  ['dhud','nitrowrap','drivehint','homebtn'].forEach(id => $(id).classList.remove('hidden'));
+  ['dhud','nitrowrap','homebtn'].forEach(id => $(id).classList.remove('hidden'));
   closeDlg();
-  /* engine hum */
-  if (ac && !DRV.eng){
+  if (ac && !DR.eng){
     const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
-    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = 320;
-    o.frequency.value = 50; g.gain.value = 0.0;
+    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = 300;
+    o.frequency.value = 48; g.gain.value = 0;
     o.connect(f).connect(g).connect(ac.destination); o.start();
-    DRV.eng = { o, g };
+    const o2 = ac.createOscillator(), g2 = ac.createGain(), f2 = ac.createBiquadFilter();
+    o2.type = 'square'; f2.type = 'bandpass'; f2.frequency.value = 900;
+    o2.frequency.value = 96; g2.gain.value = 0;
+    o2.connect(f2).connect(g2).connect(ac.destination); o2.start();
+    DR.eng = { o, g }; DR.engB = { o:o2, g:g2 };
   }
-  if (DRV.eng) DRV.eng.g.gain.value = 0.05;
-  /* drive beat */
-  clearInterval(DRV.beatTimer);
-  DRV.beatT = ac ? ac.currentTime + 0.3 : 0;
-  DRV.beatTimer = setInterval(() => {
-    if (!DRV.on || !ac) return;
-    const bd = 60/126;
-    while (DRV.beatT < ac.currentTime + 0.4){
-      const t = DRV.beatT, i = DRV.beatIdx;
-      kick(t);
-      hat(t, 0.05); hat(t + bd/2, 0.08);
-      bass(t, BASS_SEQ[i % BASS_SEQ.length]*1.5, bd*0.9);
-      if (i % 2 === 1) snare(t);
-      if (DRV.boost > 0) pluck(t + bd/2, ARP[i % ARP.length]*1.5);
-      DRV.beatT += bd; DRV.beatIdx++;
-    }
-  }, 120);
-  if (!driveIntroShown){
-    driveIntroShown = true;
-    setTimeout(() => {
-      if (DRV.on) showDlg('PITSTOP.EXE',
-        'gaadi nahi, brand chala rahe ho 🏎️\n\nleft/right se steer.\n🎧 utha ke NITRO dabao.\nboring corp se door raho.',
-        [['🏎️','🎧','⚡'],['⚡','🏎️','🔥'],['🎧','⚡','🏎️']],
-        [['VROOM 🏁', null, true]]);
-    }, 500);
-  }
+  if (DR.eng) DR.eng.g.gain.value = 0.045;
 }
-$('drivebtn').addEventListener('click', startDrive);
-function drawDriveLives(){
-  const el = $('dlives');
-  if (!FACE0URL){ el.innerHTML = '<b>' + '❤'.repeat(Math.max(0,DRV.lives)) + '</b>'; return; }
-  el.style.display = 'inline-flex'; el.style.gap = '5px'; el.style.alignItems = 'center';
-  el.innerHTML = [0,1,2].map(i =>
-    '<img class="lifepix' + (i < DRV.lives ? '' : ' lost') + '" src="' + FACE0URL + '" alt="life">'
-  ).join('');
+$('drivebtn').addEventListener('click', drStart);
+function drStop(){
+  DR.on = false;
+  if (DR.eng) DR.eng.g.gain.value = 0;
+  if (DR.engB) DR.engB.g.gain.value = 0;
+  ['dhud','nitrowrap','wasted'].forEach(id => $(id).classList.add('hidden'));
+  $('hudtop').classList.remove('hidden');
 }
-function laneMove(dir){
-  if (!DRV.on || DRV.dead || DRV.count > 0) return;
-  const now = performance.now();
-  /* committed for first 90ms of a swap; buffer the input instead */
-  if (now - DRV.twT0 < 90){ DRV.queued = dir; return; }
-  const nl = Math.max(0, Math.min(3, DRV.lane + dir));
-  if (nl !== DRV.lane){
-    DRV.twFrom = DRV.px;
-    DRV.twT0 = now;
-    DRV.lane = nl;
+function drLaneMove(dir){
+  if (!DR.on || DR.dead) return;
+  DR.moved = true;
+  if (DR.twT < 90/140){ DR.queued = dir; return; } /* committed */
+  const nl = Math.max(0, Math.min(DR.laneN - 1, DR.lane + dir));
+  if (nl !== DR.lane){
+    DR.twFrom = DR.px;
+    DR.twT = 0;
+    DR.lane = nl;
     sfx.ui();
   }
 }
-function grazeHit(){
-  const now = performance.now();
-  DRV.chain = (now - DRV.lastGraze < 3000) ? DRV.chain + 1 : 1;
-  DRV.lastGraze = now;
-  DRV.nitro = Math.min(100, DRV.nitro + Math.min(15, 8 + DRV.chain));
-  $('nbar').classList.add('nflash');
-  setTimeout(()=>$('nbar').classList.remove('nflash'), 300);
-  /* ascending melody: each clean graze plays the next note */
-  const f = GRAZE_SCALE[Math.min(DRV.chain - 1, GRAZE_SCALE.length - 1)];
+function drGraze(){
+  DR.chain = DR.sinceGraze < 3 ? DR.chain + 1 : 1;
+  DR.sinceGraze = 0;
+  DR.boost = Math.min(100, DR.boost + Math.min(15, 8 + DR.chain));
+  const root = DR_ZONES[DR.zone].keyRoot;
+  const f = DR_SCALE[Math.min(root + DR.chain - 1, DR_SCALE.length - 1)];
   blipNow(f, f*1.02, 0.1, 0.22);
-  blipNow(85, 55, 0.07, 0.1, 'sine');
-  /* 110ms of 0.35x time, then snap back */
-  if (!reduceMotion){ DRV.ts = 0.35; DRV.tsT = 0.11; }
-  parts.push({ kind:'spark', x: W/2 + (Math.random()<0.5?-1:1)*Math.min(W*0.14,100),
-    y: H - Math.max(50, H*0.1), vx:(Math.random()-0.5)*200, vy:-60-Math.random()*80,
+  blipNow(80, 52, 0.07, 0.1, 'sine');
+  if (!reduceMotion) DR.slow = 0.11;
+  parts.push({ kind:'spark', x: W/2 + (Math.random()<0.5?-1:1)*Math.min(W*0.13,95),
+    y: H - Math.max(52, H*0.1), vx:(Math.random()-0.5)*220, vy:-70-Math.random()*70,
     life:.35, t:0, r:3, c:'#F0149C' });
 }
-function pickFreeLane(p){
-  const busy = new Set();
-  for (const c of DRV.cars) if (Math.abs(c.p - p) < 4.5) busy.add(Math.round(c.laneF !== undefined ? c.laneF : c.lane));
-  for (const h of DRV.hurdles) if (Math.abs(h.p - p) < 4.5) busy.add(h.lane);
-  const free = [0,1,2,3].filter(l => !busy.has(l));
-  return free.length ? free[Math.floor(Math.random()*free.length)] : Math.floor(Math.random()*4);
-}
-function crashHit(what){
-  if (DRV.inv > 0 || DRV.dead) return;
-  DRV.lives--;
-  drawDriveLives();
-  DRV.streak = 0;
-  DRV.crashT = 1.0;
-  DRV.chain = 0;
-  DRV.freeze = 0.07;
-  DRV.speed *= 0.45;
-  G.shake = reduceMotion ? 0 : 10;
+function drDie(){
+  DR.dead = true;
+  DR.freeze = 4; /* 4 sim frames, then hard cut */
+  G.shake = reduceMotion ? 0 : 12;
   sfx.die();
-  if (DRV.lives <= 0){ crashOut(); return; }
-  DRV.inv = 2.0;
 }
-let wastedT = null;
-function crashOut(){
-  DRV.dead = true;
+function drShowWasted(){
+  const km = (DR.pos/40);
+  const newBest = km > DR.best;
+  if (newBest){ DR.best = km; store.set('dr-best', km); }
   if (FACE0URL) $('wastedimg').src = FACE0URL;
+  $('wdist').textContent = km.toFixed(2) + ' km';
+  $('wbest').textContent = (newBest ? 'new best' : 'best ' + DR.best.toFixed(2) + ' km');
   $('wasted').classList.remove('hidden');
-  sfx.die();
-  setTimeout(() => { blipNow(300,120,0.1,0.3,'square'); }, 200);
-  clearTimeout(wastedT);
-  wastedT = setTimeout(() => {
-    $('wasted').classList.add('hidden');
-    endDrive();
-  }, 1300);
 }
-/* tap the laugh = instant restart, no menu step */
 $('wasted').addEventListener('pointerdown', () => {
-  clearTimeout(wastedT);
   $('wasted').classList.add('hidden');
-  startDrive();
+  drStart();
 });
-function stepDrive(dt){
-  if (!DRV.on) return;
-  if (DRV.dead) return;
-  /* crash freeze frames */
-  if (DRV.freeze > 0){ DRV.freeze -= dt; return; }
-  /* graze slow-mo */
-  if (DRV.tsT > 0){
-    DRV.tsT -= dt;
-    if (DRV.tsT <= 0) DRV.ts = 1;
-    dt *= DRV.ts;
-  }
-  /* 3-2-1-GO countdown */
-  if (DRV.count > 0){
-    DRV.count -= dt;
-    const n = Math.ceil(DRV.count);
-    if (n !== DRV.lastN){
-      DRV.lastN = n;
-      if (n > 0){ judge(String(n)); sfx.pop(360 + (4-n)*140); }
-      else { judge('GO!! 🏁'); sfx.ding(); confetti(W/2, H*0.35, 20); }
+/* chunk serving */
+function drServe(){
+  const lib = DR_CHUNKS[DR.zone];
+  let pick;
+  const easy = lib.filter((c,i) => c.d <= 1);
+  if (DR.hardRun >= 2){
+    pick = easy[Math.floor(DR.rng()*easy.length)];
+    DR.hardRun = 0;
+  } else {
+    let tries = 0, c;
+    do {
+      const idx = Math.floor(DR.rng()*lib.length);
+      c = lib[idx];
+      if (idx === DR.lastPick) c = null;
+      else DR.lastPick = idx;
+      tries++;
+    } while (!c && tries < 8);
+    pick = c || lib[0];
+    /* boosting weights toward harder chunks */
+    if (DR.boosting && pick.d < 3 && DR.rng() < 0.5){
+      const hard = lib.filter(x => x.d >= 3);
+      if (hard.length) pick = hard[Math.floor(DR.rng()*hard.length)];
     }
+    if (pick.d >= 3) DR.hardRun++; else DR.hardRun = 0;
+  }
+  /* lane count shift */
+  if (pick.n !== DR.laneN){
+    const frac = DR.lane / (DR.laneN - 1);
+    DR.laneN = pick.n;
+    DR.lane = Math.round(frac * (DR.laneN - 1));
+    DR.twFrom = DR.px;
+    DR.twT = 0;
+  }
+  for (const h of pick.hz){
+    DR.hazards.push({ p: DR.chunkEnd + h.at, l: h.l, k: h.k, to: h.to, passed:false });
+  }
+  DR.chunkEnd += pick.len;
+}
+/* fixed-timestep sim */
+function drStep(){
+  if (DR.freeze > 0){
+    DR.freeze--;
+    if (DR.freeze <= 0 && DR.dead) drShowWasted();
     return;
   }
-  DRV.timeLeft -= dt;
-  if (DRV.timeLeft <= 0){ endDrive(); return; }
-  $('dtime').textContent = Math.ceil(DRV.timeLeft);
-  /* boost economy: graze to earn, idle drains, boosting burns */
-  DRV.boost = (DRV.nHold && DRV.nitro > 0) ? 1 : Math.max(0, DRV.boost - dt*3);
-  DRV.nitro = Math.max(0, DRV.nitro - dt*(DRV.nHold && DRV.nitro > 0 ? 20 : 2));
-  if (performance.now() - DRV.lastGraze > 3000) DRV.chain = 0;
-  const targetMax = DRV.max * (DRV.boost > 0 ? 1.6 : 1);
-  if (DRV.crashT > 0){ DRV.crashT -= dt; }
-  if (DRV.inv > 0){ DRV.inv -= dt; }
-  DRV.speed += (targetMax - DRV.speed) * Math.min(1, dt * (DRV.speed < targetMax ? 0.6 : 3));
-  DRV.pos += DRV.speed * dt;
-  const kmh = Math.round(DRV.speed * 6.2 * (DRV.boost > 0 ? 1.1 : 1));
-  DRV.topSpd = Math.max(DRV.topSpd, kmh);
-  $('dspd').textContent = kmh;
-  /* lane tween: 140ms with overshoot, buffered inputs chain */
-  const laneTarget = D_LANES[DRV.lane];
-  const tw = (performance.now() - DRV.twT0) / 140;
-  if (tw < 1){
-    const s = 1.35;
-    const t2 = tw - 1;
-    const eob = 1 + (s + 1)*t2*t2*t2 + s*t2*t2; /* easeOutBack */
-    DRV.px = DRV.twFrom + (laneTarget - DRV.twFrom) * eob;
+  if (DR.dead) return;
+  let dt = DR_DT;
+  if (DR.slow > 0){ DR.slow -= DR_DT; dt *= 0.35; }
+  /* zone */
+  DR.zone = DR.pos < 40 ? 0 : DR.pos < 120 ? 1 : 2;
+  /* boost economy */
+  DR.boosting = DR.hold && DR.boost > 0;
+  DR.boost = Math.max(0, DR.boost - dt*(DR.boosting ? 20 : 2));
+  DR.sinceGraze += dt;
+  if (DR.sinceGraze > 3) DR.chain = 0;
+  const MAX = 26 + Math.min(10, DR.pos/60); /* gentle deep-run escalation */
+  const target = MAX * (DR.boosting ? 1.6 : 1);
+  DR.spd += (target - DR.spd) * Math.min(1, dt*(DR.spd < target ? 0.7 : 2.5));
+  DR.pos += DR.spd * dt;
+  DR.score += DR.spd * dt * (DR.boosting ? 3 : 1) * (1 + Math.min(4, DR.chain*0.5));
+  $('dscore').textContent = Math.floor(DR.score);
+  $('nfill').style.width = DR.boost + '%';
+  /* oil: steering locked */
+  if (DR.oil > 0) DR.oil -= dt;
+  /* lane tween: sim-time, overshoot, buffered */
+  DR.twT = Math.min(1, DR.twT + dt/0.14);
+  const L = DR_LANESETS[DR.laneN];
+  const targetX = L[DR.lane];
+  if (DR.twT < 1){
+    const s = 1.1, t2 = DR.twT - 1;
+    DR.px = DR.twFrom + (targetX - DR.twFrom) * (1 + (s+1)*t2*t2*t2 + s*t2*t2);
   } else {
-    DRV.px = laneTarget;
-    if (DRV.queued){ const q = DRV.queued; DRV.queued = 0; laneMove(q); }
+    DR.px = targetX;
+    if (DR.queued){ const q = DR.queued; DR.queued = 0; drLaneMove(q); }
   }
-  const laneDelta = laneTarget - DRV.px;
-  /* drift sparks on lane change at speed */
-  if (Math.abs(laneDelta) > 0.12 && DRV.speed > DRV.max*0.6 && !reduceMotion && Math.random() < 0.5){
-    parts.push({ kind:'spark', x: W/2 + (laneDelta>0?-1:1)*Math.min(W*0.1,80),
-      y: H - Math.max(40, H*0.07), vx:(Math.random()-0.5)*120 - laneDelta*300,
-      vy: 40+Math.random()*90, life:.3, t:0, r:2.5, c:'#F0149C' });
-  }
-  /* checkpoint: pill flashes pink, no words */
-  if (DRV.pos - DRV.lastCk > 300){
-    DRV.lastCk = DRV.pos;
-    DRV.timeLeft += 12;
-    sfx.ding();
-    $('dtimepill').classList.add('ckflash');
-    setTimeout(()=>$('dtimepill').classList.remove('ckflash'), 700);
-  }
-  /* traffic: drifting rivals — prediction over reaction */
-  for (const car of DRV.cars){
-    car.p += car.spd * dt;
-    const rel = car.p - DRV.pos;
-    /* occasional slow merge into a neighbor lane, only while far ahead */
-    if (!car.mv && rel > 7 && Math.random() < dt*0.12){
-      const to = Math.max(0, Math.min(3, car.lane + (Math.random()<0.5?-1:1)));
-      if (to !== car.lane) car.mv = { from: car.laneF, to, t0: performance.now() };
+  /* serve chunks ahead */
+  while (DR.chunkEnd < DR.pos + 60) drServe();
+  /* hazards */
+  for (let i = DR.hazards.length - 1; i >= 0; i--){
+    const h = DR.hazards[i];
+    const rel = h.p - DR.pos;
+    if (rel < -3){ DR.hazards.splice(i, 1); continue; }
+    /* trucks merge deterministically, telegraphed by distance */
+    if (h.k === 'truck' && h.to !== undefined){
+      h.lf = h.l + (h.to - h.l) * Math.max(0, Math.min(1, (16 - rel)/9));
     }
-    if (car.mv){
-      const mt = (performance.now() - car.mv.t0)/900;
-      if (mt >= 1){ car.laneF = car.mv.to; car.lane = car.mv.to; car.mv = null; }
-      else car.laneF = car.mv.from + (car.mv.to - car.mv.from)*(mt*mt*(3-2*mt));
-    }
-    const carLane = Math.round(car.laneF);
-    if (!car.passed && rel < -0.15){
-      car.passed = true;
-      DRV.ot++; $('dot').textContent = DRV.ot;
-      DRV.streak++;
-      if (Math.abs(carLane - DRV.lane) === 1) grazeHit();
-    }
-    if (rel < -3){
-      car.p = DRV.pos + 50 + Math.random()*40;
-      car.lane = pickFreeLane(car.p);
-      car.laneF = car.lane; car.mv = null; car.passed = false;
-    } else if (rel < 0.9 && rel > -0.1 && carLane === DRV.lane){
-      crashHit('BORING CORP SEDAN');
-      if (DRV.dead) return;
-      car.p = DRV.pos + 45 + Math.random()*30;
-      car.lane = pickFreeLane(car.p);
-      car.laneF = car.lane; car.mv = null; car.passed = false;
-    }
-  }
-  /* hurdles: static roadblocks with graze bands */
-  for (const h of DRV.hurdles){
-    const rel = h.p - DRV.pos;
+    const hl = h.k === 'truck' && h.lf !== undefined ? Math.round(h.lf) : h.l;
     if (!h.passed && rel < -0.15){
       h.passed = true;
-      if (Math.abs(h.lane - DRV.lane) === 1) grazeHit();
+      if (h.k !== 'oil' && Math.abs(hl - DR.lane) === 1) drGraze();
     }
-    if (rel < -2){
-      h.p = DRV.pos + 60 + Math.random()*50;
-      h.lane = pickFreeLane(h.p);
-      h.type = Math.random() < 0.6 ? 'cone' : 'bar';
-      h.passed = false;
-    } else if (rel < 0.7 && rel > -0.1 && h.lane === DRV.lane){
-      crashHit('HURDLE');
-      if (DRV.dead) return;
-      h.p = DRV.pos + 55 + Math.random()*40;
-      h.lane = pickFreeLane(h.p);
-      h.passed = false;
-    }
-  }
-  /* pickups */
-  for (const pk of DRV.picks){
-    const rel = pk.p - DRV.pos;
-    if (rel < -2 || pk.dead){
-      pk.p = DRV.pos + 45 + Math.random()*55;
-      pk.lane = Math.floor(Math.random()*4);
-      pk.kind = Math.random() < 0.55 ? 'n' : 'card';
-      pk.fi = Math.floor(Math.random()*5);
-      pk.dead = false;
-    } else if (rel < 1.0 && rel > -0.2 && pk.lane === DRV.lane){
-      pk.dead = true;
-      if (pk.kind === 'n'){
-        DRV.nitro = Math.min(100, DRV.nitro + 34);
-        sfx.pop(700);
-        $('nbar').classList.add('nflash');
-        setTimeout(()=>$('nbar').classList.remove('nflash'), 400);
+    if (rel < 0.65 && rel > -0.05 && hl === DR.lane){
+      if (h.k === 'oil'){
+        if (!h.hit){ h.hit = true; DR.oil = 0.8; blipNow(160, 60, 0.07, 0.3); G.shake = Math.max(G.shake, 4); }
       } else {
-        DRV.cr += 5; $('dcr').textContent = DRV.cr;
-        sfx.ding();
+        drDie();
+        return;
       }
-      coinPop(W/2, H*0.55);
     }
   }
-  $('nfill').style.width = DRV.nitro + '%';
-  /* engine pitch */
-  if (DRV.eng && ac){
-    DRV.eng.o.frequency.value = 46 + (DRV.speed/DRV.max)*85 + DRV.boost*30;
-    DRV.eng.g.gain.value = 0.05 + DRV.boost*0.02;
+  /* best marker crossing */
+  if (!DR.bestHit && DR.best > 0 && DR.pos/40 > DR.best){
+    DR.bestHit = true;
+    sfx.ding();
+    confetti(W/2, H*0.4, 26);
   }
-  stepParts(dt);
+  /* engine */
+  if (DR.eng && ac){
+    DR.eng.o.frequency.value = 44 + (DR.spd/36)*80;
+    DR.engB.g.gain.value = DR.boosting ? 0.02 : 0;
+    DR.engB.o.frequency.value = 88 + (DR.spd/36)*160;
+  }
 }
-function endDrive(){
-  DRV.on = false;
-  clearInterval(DRV.beatTimer);
-  if (DRV.eng) DRV.eng.g.gain.value = 0;
-  ['dhud','nitrowrap','drivehint','homebtn'].forEach(id => $(id).classList.add('hidden'));
-  $('hudtop').classList.remove('hidden');
-  const km = (DRV.pos/40).toFixed(1);
-  const score = DRV.pos/40*8 + DRV.ot*3 + DRV.cr;
-  $('dfkm').textContent = km;
-  $('dftop').textContent = DRV.topSpd;
-  $('dfot').textContent = DRV.ot;
-  $('dfcr').textContent = '₹' + DRV.cr;
-  $('drank').textContent = D_RANKS.find(r => score >= r[0])[1];
-  $('droast').textContent = D_ROASTS.find(r => score >= r[0])[1];
-  $('dover').classList.remove('hidden');
-  sfx.ding();
-  confetti(W/2, H*0.4, 30);
-}
-$('dagain').addEventListener('click', () => { $('dover').classList.add('hidden'); startDrive(); });
-$('dmenu').addEventListener('click', () => { $('dover').classList.add('hidden'); toHome(); });
-$('dpitch').addEventListener('click', () => {
-  $('dover').classList.add('hidden');
-  $('pitch').classList.remove('hidden');
-  typePitch();
+/* input */
+addEventListener('keydown', e => {
+  if (!DR.on) return;
+  if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat && DR.oil <= 0) drLaneMove(-1);
+  if ((e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat && DR.oil <= 0) drLaneMove(1);
+  if (e.code === 'Space' || e.code === 'ShiftLeft'){ e.preventDefault(); DR.hold = true; }
 });
-$('dshare').addEventListener('click', async () => {
-  const data = { title:'OFF/BEAT DRIVE',
-    text:'off/beat drive: ' + $('dfkm').textContent + ' km at ' + DRV.topSpd + ' km/h, ' + DRV.ot + ' overtakes 🏎️ full send.',
-    url:location.href };
-  try{
-    if (navigator.share) await navigator.share(data);
-    else { await navigator.clipboard.writeText(data.text + ' ' + data.url); toast('link copied'); }
-  }catch(e){}
+addEventListener('keyup', e => {
+  if (e.code === 'Space' || e.code === 'ShiftLeft') DR.hold = false;
 });
-/* nitro button (touch) */
 const nbtn = $('nitrobtn');
-nbtn.addEventListener('pointerdown', e => { e.preventDefault(); DRV.nHold = true; });
-nbtn.addEventListener('pointerup', () => { DRV.nHold = false; });
-nbtn.addEventListener('pointercancel', () => { DRV.nHold = false; });
-/* drive render */
+nbtn.addEventListener('pointerdown', e => { e.preventDefault(); DR.hold = true; });
+nbtn.addEventListener('pointerup', () => { DR.hold = false; });
+nbtn.addEventListener('pointercancel', () => { DR.hold = false; });
+/* renderer */
 function rrp(x,y,w,h,r){
   cx.beginPath();
   if (cx.roundRect) cx.roundRect(x,y,w,h,r); else cx.rect(x,y,w,h);
 }
-function drawDrive(dt){
+const DR_SEGN = 56;
+function drDraw(){
   cx.setTransform(DPR,0,0,DPR,0,0);
   if (G.shake > 0.3){
-    cx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
-    G.shake *= Math.pow(0.0005, dt);
+    cx.translate((Math.random()-.5)*Math.min(G.shake, 8), (Math.random()-.5)*Math.min(G.shake, 8));
+    G.shake *= 0.9;
   }
-  /* camera bank into turns */
-  const bankSteer = DRV.touchX !== null
-    ? Math.max(-1, Math.min(1, (DRV.touchX - DRV.px)*1.6))
-    : ((DRV.kL?-1:0)+(DRV.kR?1:0));
-  if (!reduceMotion){
-    const bank = (bankSteer*0.45 + dCurve(Math.floor(DRV.pos))*0.22) * (DRV.speed/DRV.max);
-    cx.translate(W/2, H); cx.rotate(bank*0.045); cx.translate(-W/2, -H);
-  }
-  const portrait = W < H;
-  const horizon = H*(portrait ? 0.36 : 0.42);
-  /* sky */
-  const sg = cx.createLinearGradient(0,0,0,horizon);
-  sg.addColorStop(0,'#F8F5EB'); sg.addColorStop(1,'#F0ECDf');
-  cx.fillStyle = sg; cx.fillRect(-30,-30,W+60,horizon+32);
-  const sunX = W*0.5 - DRV.px*W*0.1, sunY = horizon - H*0.16, sunR = Math.min(W,H)*0.09;
-  cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
-  cx.fillStyle = 'rgba(240,20,156,'+(DRV.boost>0?0.5:0.3)+')'; cx.fill();
-  cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4,sunR*0.16); cx.lineCap='round';
-  cx.beginPath(); cx.moveTo(sunX+sunR*0.32, sunY-sunR*0.75); cx.lineTo(sunX-sunR*0.32, sunY+sunR*0.75); cx.stroke();
-  /* horizon skyline */
-  cx.fillStyle = 'rgba(17,17,20,.07)';
-  for (let b=0;b<14;b++){
-    const bw2 = 40 + (b*53)%70, bh = 14 + (b*37)%42;
-    cx.fillRect(((b*137 - DRV.pos*2) % (W+160) + W+160) % (W+160) - 80, horizon-bh, bw2, bh);
-  }
-  /* ground base */
-  cx.fillStyle = '#E9E5D6';
-  cx.fillRect(-30, horizon, W+60, H-horizon+30);
-  /* road rows far→near */
-  const base = Math.floor(DRV.pos), frac = DRV.pos - base;
-  const rows = [];
-  let xo = 0, dxo = 0;
-  for (let n = 1; n <= DRV_N; n++){
-    const i = base + n;
-    const p = Math.pow(1 - n/DRV_N, 2.6);
-    dxo += dCurve(i) * 0.0022;
-    xo += dxo;
-    const hillDy = (dHill(i) - dHill(base)) * p * 0.55;
-    rows.push({
-      i,
-      y: horizon + (H + 40 - horizon) * p - hillDy,
-      w: (W*(portrait ? 0.56 : 0.44)) * p + 4,
-      c: W/2 + xo * W * p * 2.4 - DRV.px * W * (portrait ? 0.5 : 0.42) * p,
-      p,
-    });
-  }
-  for (let n = rows.length - 1; n > 0; n--){
-    const r1 = rows[n], r2 = rows[n-1]; /* r2 nearer */
-    if (r2.y <= r1.y) continue;
-    const alt = r1.i % 2;
-    /* grass */
-    cx.fillStyle = alt ? '#EAE6D8' : '#E2DECE';
-    cx.fillRect(-30, r1.y, W+60, r2.y - r1.y + 1);
-    /* rumble */
-    const rw1 = r1.w*1.14, rw2 = r2.w*1.14;
-    cx.fillStyle = alt ? '#F0149C' : '#FBF9F2';
-    cx.beginPath();
-    cx.moveTo(r1.c - rw1, r1.y); cx.lineTo(r1.c + rw1, r1.y);
-    cx.lineTo(r2.c + rw2, r2.y); cx.lineTo(r2.c - rw2, r2.y);
-    cx.closePath(); cx.fill();
-    /* road */
-    cx.fillStyle = alt ? '#2A2A31' : '#26262C';
-    cx.beginPath();
-    cx.moveTo(r1.c - r1.w, r1.y); cx.lineTo(r1.c + r1.w, r1.y);
-    cx.lineTo(r2.c + r2.w, r2.y); cx.lineTo(r2.c - r2.w, r2.y);
-    cx.closePath(); cx.fill();
-    /* center dash */
-    if (r1.i % 3 < 2){
-      const dw1 = r1.w*0.03+1, dw2 = r2.w*0.03+1;
-      cx.fillStyle = 'rgba(251,249,242,.75)';
-      cx.beginPath();
-      cx.moveTo(r1.c - dw1, r1.y); cx.lineTo(r1.c + dw1, r1.y);
-      cx.lineTo(r2.c + dw2, r2.y); cx.lineTo(r2.c - dw2, r2.y);
-      cx.closePath(); cx.fill();
-    }
-    /* billboards on this row */
-    if (r1.i % 17 === 0 && r1.p > 0.06){
-      const side = (r1.i % 34 === 0) ? -1 : 1;
-      const bx = r1.c + side * r1.w * 1.7;
-      const bw3 = r1.w * 0.62, bh3 = r1.w * 0.3;
-      cx.fillStyle = '#111114';
-      cx.fillRect(bx - bw3/2 - 2, r1.y - bh3 - 2, bw3 + 4, bh3 + 4);
-      cx.fillStyle = '#F0149C';
-      cx.fillRect(bx - bw3/2, r1.y - bh3, bw3, bh3);
-      if (r1.p > 0.22){
-        cx.fillStyle = '#111114';
-        cx.font = '700 ' + Math.max(7, bh3*0.42) + 'px "Archivo Black", sans-serif';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('OFF/BEAT', bx, r1.y - bh3/2);
-      }
-      cx.fillStyle = '#111114';
-      cx.fillRect(bx - 2, r1.y - 2, 4, r1.w*0.12 + 2);
-    }
-  }
-  /* sprites far→near: cars + pickups */
-  const spr = [];
-  for (const car of DRV.cars){
-    const rel = car.p - DRV.pos;
-    if (rel > 0.4 && rel < DRV_N - 2) spr.push({ rel, kind:'car', lane:car.lane });
-  }
-  for (const pk of DRV.picks){
-    const rel = pk.p - DRV.pos;
-    if (!pk.dead && rel > 0.4 && rel < DRV_N - 2) spr.push({ rel, kind:pk.kind, lane:pk.lane, fi:pk.fi });
-  }
-  spr.sort((a,b) => b.rel - a.rel);
-  for (const s of spr){
-    const n = Math.max(1, Math.min(DRV_N - 1, Math.floor(s.rel)));
-    const r = rows[n-1];
-    if (!r || r.p < 0.03) continue;
-    const sx = r.c + s.lane * r.w;
-    if (s.kind === 'car'){
-      const cw2 = r.w * 0.42, chh = cw2 * 0.62;
-      cx.fillStyle = 'rgba(0,0,0,.25)';
-      cx.beginPath(); cx.ellipse(sx, r.y + 2, cw2*0.55, chh*0.16, 0, 0, Math.PI*2); cx.fill();
-      /* wheels */
-      cx.fillStyle = '#0C0C10';
-      cx.fillRect(sx - cw2*0.56, r.y - chh*0.36, cw2*0.14, chh*0.4);
-      cx.fillRect(sx + cw2*0.42, r.y - chh*0.36, cw2*0.14, chh*0.4);
-      /* body with shading */
-      const tg = cx.createLinearGradient(sx, r.y - chh, sx, r.y);
-      tg.addColorStop(0, '#34343E'); tg.addColorStop(0.5, '#1B1B22'); tg.addColorStop(1, '#0E0E12');
-      cx.fillStyle = tg;
-      rrp(sx - cw2/2, r.y - chh*0.72, cw2, chh*0.72, chh*0.18); cx.fill();
-      /* cabin */
-      cx.fillStyle = '#3E3E4A';
-      rrp(sx - cw2*0.32, r.y - chh, cw2*0.64, chh*0.42, chh*0.12); cx.fill();
-      cx.fillStyle = 'rgba(251,249,242,.14)';
-      cx.fillRect(sx - cw2*0.26, r.y - chh*0.94, cw2*0.52, chh*0.14);
-      if (r.p > 0.2){
-        cx.fillStyle = '#FBF9F2';
-        cx.font = '700 ' + Math.max(6, cw2*0.15) + 'px "Space Mono", monospace';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('BORING', sx, r.y - chh*0.36);
-      }
-      cx.fillStyle = '#F0149C';
-      cx.fillRect(sx - cw2*0.44, r.y - chh*0.12, cw2*0.16, chh*0.1);
-      cx.fillRect(sx + cw2*0.28, r.y - chh*0.12, cw2*0.16, chh*0.1);
-    } else if (s.kind === 'n'){
-      const rr = Math.max(4, r.w * 0.13);
-      cx.beginPath(); cx.arc(sx, r.y - rr*1.2, rr, 0, Math.PI*2);
-      cx.fillStyle = '#F0149C'; cx.fill();
-      cx.strokeStyle = '#111114'; cx.lineWidth = 2; cx.stroke();
-      if (r.p > 0.15){
-        cx.font = rr*1.2 + 'px serif';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('🎧', sx, r.y - rr*1.15);
-      }
-    } else {
-      const rr = Math.max(5, r.w * 0.14);
-      cx.imageSmoothingEnabled = false;
-      cx.fillStyle = '#F0149C';
-      cx.fillRect(sx - rr, r.y - rr*2.2, rr*2, rr*2);
-      if (FACES[s.fi]) cx.drawImage(FACES[s.fi], sx - rr + 2, r.y - rr*2.2 + 2, rr*2 - 4, rr*2 - 4);
-      cx.imageSmoothingEnabled = true;
-      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
-      cx.strokeRect(sx - rr, r.y - rr*2.2, rr*2, rr*2);
-    }
-  }
-  /* nitro speedlines */
-  if (DRV.boost > 0 && !reduceMotion){
-    cx.strokeStyle = 'rgba(240,20,156,.45)';
-    cx.lineWidth = 3;
-    for (let l=0;l<7;l++){
-      const a = Math.random()*Math.PI*2, rr = Math.min(W,H)*0.55;
-      cx.beginPath();
-      cx.moveTo(W/2 + Math.cos(a)*rr*0.5, H/2 + Math.sin(a)*rr*0.5);
-      cx.lineTo(W/2 + Math.cos(a)*rr, H/2 + Math.sin(a)*rr);
-      cx.stroke();
-    }
-  }
-  /* player car: flat-shaded 3d, horizon-chase style */
-  const pcx = W/2, pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095));
-  const carW = Math.min(W*(portrait ? 0.42 : 0.24), 215), carH = carW*0.56;
-  const tilt = bankSteer*0.11 + Math.sin(performance.now()/70)*0.01*(DRV.speed/DRV.max)
-    + (DRV.crashT > 0 ? Math.sin(performance.now()/40)*0.14 : 0);
-  cx.save();
-  cx.translate(pcx, pcy);
-  cx.rotate(tilt);
-  /* nitro flames behind body */
-  if (DRV.boost > 0){
-    cx.fillStyle = 'rgba(240,20,156,.85)';
-    const fl = carH*(0.35 + Math.random()*0.4);
-    cx.beginPath();
-    cx.moveTo(-carW*0.26, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl); cx.lineTo(-carW*0.06, carH*0.3);
-    cx.moveTo(carW*0.06, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.85); cx.lineTo(carW*0.26, carH*0.3);
-    cx.fill();
-    cx.fillStyle = 'rgba(251,249,242,.9)';
-    cx.beginPath();
-    cx.moveTo(-carW*0.21, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl*0.5); cx.lineTo(-carW*0.11, carH*0.3);
-    cx.moveTo(carW*0.11, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.42); cx.lineTo(carW*0.21, carH*0.3);
-    cx.fill();
-  }
-  /* shadow */
-  cx.fillStyle = 'rgba(0,0,0,.3)';
-  cx.beginPath(); cx.ellipse(0, carH*0.34, carW*0.56, carH*0.13, 0, 0, Math.PI*2); cx.fill();
-  /* rear wheels */
-  cx.fillStyle = '#0C0C10';
-  rrp(-carW*0.56, -carH*0.04, carW*0.17, carH*0.42, carH*0.08); cx.fill();
-  rrp(carW*0.39, -carH*0.04, carW*0.17, carH*0.42, carH*0.08); cx.fill();
-  cx.fillStyle = '#3A3A44';
-  rrp(-carW*0.53, carH*0.08, carW*0.11, carH*0.18, carH*0.05); cx.fill();
-  rrp(carW*0.42, carH*0.08, carW*0.11, carH*0.18, carH*0.05); cx.fill();
-  /* body wedge with shading */
-  const bgrad = cx.createLinearGradient(0, -carH*0.5, 0, carH*0.35);
-  bgrad.addColorStop(0, '#FF63B8'); bgrad.addColorStop(0.55, '#F0149C'); bgrad.addColorStop(1, '#B80D77');
-  cx.fillStyle = (DRV.crashT > 0 && Math.floor(performance.now()/80)%2) ? '#FF9DD2' : bgrad;
-  rrp(-carW*0.48, -carH*0.18, carW*0.96, carH*0.52, carH*0.14);
-  cx.fill();
-  cx.strokeStyle = '#111114'; cx.lineWidth = 3; cx.stroke();
-  /* lower skirt shade */
-  cx.fillStyle = 'rgba(17,17,20,.2)';
-  rrp(-carW*0.46, carH*0.2, carW*0.92, carH*0.12, carH*0.06); cx.fill();
-  /* cabin */
-  const cabW = carW*0.58;
-  const cgrad = cx.createLinearGradient(0, -carH*0.56, 0, -carH*0.1);
-  cgrad.addColorStop(0, '#23232B'); cgrad.addColorStop(1, '#101014');
-  cx.fillStyle = cgrad;
-  rrp(-cabW/2, -carH*0.54, cabW, carH*0.42, carH*0.12);
-  cx.fill(); cx.strokeStyle = '#111114'; cx.lineWidth = 2.5; cx.stroke();
-  /* rear window glint */
-  cx.fillStyle = 'rgba(251,249,242,.2)';
-  rrp(-cabW*0.38, -carH*0.5, cabW*0.76, carH*0.15, carH*0.05); cx.fill();
-  /* spoiler */
-  cx.fillStyle = '#111114';
-  rrp(-carW*0.44, -carH*0.68, carW*0.88, carH*0.1, carH*0.04); cx.fill();
-  cx.fillRect(-carW*0.3, -carH*0.58, carW*0.07, carH*0.1);
-  cx.fillRect(carW*0.23, -carH*0.58, carW*0.07, carH*0.1);
-  /* slash decal */
-  cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(4, carW*0.05); cx.lineCap = 'round';
-  cx.beginPath(); cx.moveTo(carW*0.08, -carH*0.1); cx.lineTo(-carW*0.08, carH*0.24); cx.stroke();
-  /* tail lights */
-  cx.fillStyle = '#FBF9F2';
-  rrp(-carW*0.44, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
-  rrp(carW*0.30, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
-  cx.restore();
-  /* particles (txt popups + confetti) */
-  for (const p of parts){
-    cx.globalAlpha = Math.max(0, 1 - p.t/p.life);
-    if (p.kind === 'txt'){
-      cx.fillStyle = p.c;
-      cx.font = '700 16px "Space Mono", monospace';
-      cx.textAlign = 'center'; cx.textBaseline = 'middle';
-      cx.fillText(p.text, p.x, p.y);
-    } else if (p.kind === 'rect' || p.kind === 'spark'){
-      cx.fillStyle = p.c;
-      cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
-    }
-  }
-  cx.globalAlpha = 1;
-}
-/* ===== drive engine v2: true pseudo-3d projection, crest clipping ===== */
-const SEG_N = 62;
-function dCurve2(i){ return Math.sin(i/38)*1.0 + Math.sin(i/91)*0.7; }
-function dHill2(i){ return 0; }
-function drawDrive2(dt){
-  cx.setTransform(DPR,0,0,DPR,0,0);
-  if (G.shake > 0.3){
-    cx.translate((Math.random()-.5)*G.shake, (Math.random()-.5)*G.shake);
-    G.shake *= Math.pow(0.0005, dt);
-  }
-  const bankSteer = Math.max(-1, Math.min(1, (D_LANES[DRV.lane] - DRV.px)*3));
-  if (!reduceMotion){
-    const bank = (bankSteer*0.5 + dCurve2(Math.floor(DRV.pos))*0.4) * (DRV.speed/DRV.max);
-    cx.translate(W/2, H); cx.rotate(bank*0.02); cx.translate(-W/2, -H);
-  }
+  const Z = DR_ZONES[DR.zone];
   const portrait = W < H;
   const horizon = H*(portrait ? 0.34 : 0.40);
+  const fov = 1 + (DR.boost/100)*0.1; /* road widens as boost fills */
   /* sky */
   const sg = cx.createLinearGradient(0,0,0,horizon);
-  sg.addColorStop(0,'#F8F5EB'); sg.addColorStop(1,'#EFEBDD');
+  sg.addColorStop(0, Z.sky[0]); sg.addColorStop(1, Z.sky[1]);
   cx.fillStyle = sg; cx.fillRect(-40,-40,W+80,horizon+42);
-  const sunX = W*0.55 - DRV.px*W*0.05, sunY = horizon - H*0.15, sunR = Math.min(W,H)*0.09;
+  const sunX = W*0.55 - DR.px*W*0.04, sunY = horizon - H*0.15, sunR = Math.min(W,H)*0.085;
   cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
-  cx.fillStyle = 'rgba(240,20,156,'+(DRV.boost>0?0.5:0.3)+')'; cx.fill();
+  cx.fillStyle = 'rgba(240,20,156,'+(DR.boosting?0.45:0.28)+')'; cx.fill();
   cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4,sunR*0.16); cx.lineCap='round';
   cx.beginPath(); cx.moveTo(sunX+sunR*0.32, sunY-sunR*0.75); cx.lineTo(sunX-sunR*0.32, sunY+sunR*0.75); cx.stroke();
-  /* drifting clouds */
-  cx.fillStyle = 'rgba(251,249,242,.8)';
-  for (const [off, cy2, cs] of [[0, 0.55, 1],[W*0.9, 0.3, 0.7]]){
-    const cxp = W - ((DRV.pos*2.2 + off) % (W*1.7));
-    cx.beginPath();
-    cx.ellipse(cxp, horizon*cy2, 54*cs, 15*cs, 0, 0, Math.PI*2);
-    cx.ellipse(cxp+34*cs, horizon*cy2+6, 38*cs, 12*cs, 0, 0, Math.PI*2);
-    cx.fill();
-  }
-  /* skyline */
   cx.fillStyle = 'rgba(17,17,20,.07)';
   for (let b=0;b<14;b++){
     const bw2 = 40 + (b*53)%70, bh = 14 + (b*37)%42;
-    cx.fillRect(((b*137 - DRV.pos*3) % (W+160) + W+160) % (W+160) - 80, horizon-bh, bw2, bh);
+    cx.fillRect(((b*137 - DR.pos*3) % (W+160) + W+160) % (W+160) - 80, horizon-bh, bw2, bh);
   }
-  /* ground */
-  cx.fillStyle = '#E7E3D3';
+  cx.fillStyle = Z.grass[0];
   cx.fillRect(-40, horizon, W+80, H-horizon+40);
-  /* projection */
-  const base = Math.floor(DRV.pos), frac = DRV.pos - base;
+  /* projection: flat, stable */
+  const base = Math.floor(DR.pos), frac = DR.pos - base;
   const camH = 2.6, K = H*0.34;
-  const camY = camH + dHill2(base) + (dHill2(base+1)-dHill2(base))*frac;
-  const RW = W*(portrait ? 0.8 : 0.54);
-  const GAIN = 0.55;
-  const T = dCurve2(base)*GAIN;
+  const RW = W*(portrait ? 0.8 : 0.54) * fov;
+  const GAIN = 0.5;
+  const T = (Math.sin(base/40)*0.9)*GAIN;
   const rows = [];
   let Xacc = 0;
-  for (let n = 0; n <= SEG_N; n++){
+  for (let n = 0; n <= DR_SEGN; n++){
     const i = base + n;
-    if (n > 0) Xacc += dCurve2(i-1)*GAIN;
+    if (n > 0) Xacc += Math.sin((i-1)/40)*0.9*GAIN;
     const z = Math.max(0.3, n - frac + 0.55);
     const s = 1/z;
     const wx = Xacc - T*(n - frac);
-    rows.push({
-      i, s, vis:false,
-      y: horizon + K*(camY - dHill2(i))*s,
-      w: RW*s,
-      x: W/2 + (wx - DRV.px)*RW*s,
-    });
+    rows.push({ i, s, y: horizon + K*camH*s, w: RW*s, x: W/2 + (wx - DR.px)*RW*s });
   }
-  /* road bands near→far with crest clipping */
-  let minY = H + 80;
   let prev = rows[0];
-  for (let n = 1; n <= SEG_N; n++){
+  const L = DR_LANESETS[DR.laneN];
+  for (let n = 1; n <= DR_SEGN; n++){
     const r = rows[n];
-    if (r.y >= minY){ continue; }
-    r.vis = true;
+    if (r.y >= prev.y) continue;
     const alt = r.i % 2;
-    /* grass band */
-    cx.fillStyle = alt ? '#EAE6D8' : '#E1DDCD';
-    cx.fillRect(-40, r.y, W+80, Math.min(minY, prev.y) - r.y + 1);
-    /* rumble */
-    const rw1 = prev.w*1.16, rw2 = r.w*1.16;
+    cx.fillStyle = Z.grass[alt ? 0 : 1];
+    cx.fillRect(-40, r.y, W+80, prev.y - r.y + 1);
+    const rw1 = prev.w*1.14, rw2 = r.w*1.14;
     cx.fillStyle = alt ? '#F0149C' : '#FBF9F2';
     cx.beginPath();
     cx.moveTo(prev.x - rw1, prev.y); cx.lineTo(prev.x + rw1, prev.y);
     cx.lineTo(r.x + rw2, r.y); cx.lineTo(r.x - rw2, r.y);
     cx.closePath(); cx.fill();
-    /* road */
-    cx.fillStyle = alt ? '#2B2B32' : '#26262C';
+    cx.fillStyle = Z.road[alt ? 0 : 1];
     cx.beginPath();
     cx.moveTo(prev.x - prev.w, prev.y); cx.lineTo(prev.x + prev.w, prev.y);
     cx.lineTo(r.x + r.w, r.y); cx.lineTo(r.x - r.w, r.y);
     cx.closePath(); cx.fill();
-    /* lane dashes: 3 lines = 4 lanes */
     if (r.i % 3 !== 0){
-      cx.fillStyle = 'rgba(251,249,242,.7)';
-      for (const ln of [-0.5, 0, 0.5]){
+      cx.fillStyle = 'rgba(251,249,242,.65)';
+      for (let li = 0; li < L.length - 1; li++){
+        const ln = (L[li] + L[li+1])/2;
         cx.beginPath();
-        cx.moveTo(prev.x + ln*prev.w - prev.w*0.02, prev.y);
-        cx.lineTo(prev.x + ln*prev.w + prev.w*0.02, prev.y);
-        cx.lineTo(r.x + ln*r.w + r.w*0.02, r.y);
-        cx.lineTo(r.x + ln*r.w - r.w*0.02, r.y);
+        cx.moveTo(prev.x + ln*prev.w - prev.w*0.018, prev.y);
+        cx.lineTo(prev.x + ln*prev.w + prev.w*0.018, prev.y);
+        cx.lineTo(r.x + ln*r.w + r.w*0.018, r.y);
+        cx.lineTo(r.x + ln*r.w - r.w*0.018, r.y);
         cx.closePath(); cx.fill();
       }
     }
-    /* roadside poles + billboards */
-    if (r.i % 5 === 0 && r.s > 0.06){
-      const side = (r.i % 10 === 0) ? -1 : 1;
-      const px2 = r.x + side * r.w * 1.5;
-      const ph = r.w * 0.55;
-      cx.fillStyle = (r.i % 10 === 0) ? '#F0149C' : '#111114';
-      cx.fillRect(px2 - r.w*0.02, r.y - ph, r.w*0.04, ph);
-      cx.beginPath(); cx.arc(px2, r.y - ph, r.w*0.06, 0, Math.PI*2); cx.fill();
+    /* best-distance gate: a line you drive through */
+    if (DR.best > 0 && !DR.bestHit && Math.abs(r.i - DR.best*40) < 1){
+      cx.fillStyle = 'rgba(240,20,156,.8)';
+      cx.fillRect(r.x - r.w, r.y - 2, r.w*2, 4);
     }
-    if (r.i % 21 === 0 && r.s > 0.1){
-      const side = (r.i % 42 === 0) ? -1 : 1;
-      const bx = r.x + side * r.w * 1.85;
-      const bw3 = r.w * 0.72, bh3 = r.w * 0.32;
-      cx.fillStyle = '#111114';
-      cx.fillRect(bx - bw3/2 - 2, r.y - bh3*2 - 2, bw3 + 4, bh3 + 4);
-      cx.fillStyle = '#F0149C';
-      cx.fillRect(bx - bw3/2, r.y - bh3*2, bw3, bh3);
-      cx.fillStyle = '#111114';
-      cx.fillRect(bx - 2, r.y - bh3, 4, bh3);
-      cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(2, bh3*0.14); cx.lineCap = 'round';
-      cx.beginPath();
-      cx.moveTo(bx + bw3*0.08, r.y - bh3*1.82);
-      cx.lineTo(bx - bw3*0.08, r.y - bh3*1.18);
-      cx.stroke();
-    }
-    minY = r.y;
     prev = r;
   }
-  /* sprites far→near */
-  const spr = [];
-  for (const car of DRV.cars){
-    const rel = car.p - DRV.pos;
-    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:'car', lane:car.laneF });
-  }
-  for (const pk of DRV.picks){
-    const rel = pk.p - DRV.pos;
-    if (!pk.dead && rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:pk.kind, lane:pk.lane, fi:pk.fi });
-  }
-  for (const h of DRV.hurdles){
-    const rel = h.p - DRV.pos;
-    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:h.type, lane:h.lane, label:h.label });
-  }
-  spr.sort((a,b) => b.rel - a.rel);
-  const laneX = f => {
-    const i0 = Math.max(0, Math.min(3, Math.floor(f)));
-    const i1 = Math.max(0, Math.min(3, Math.ceil(f)));
-    return D_LANES[i0] + (D_LANES[i1] - D_LANES[i0]) * (f - i0);
-  };
-  for (const sp of spr){
-    const n = Math.max(1, Math.min(SEG_N, Math.floor(sp.rel + frac)));
+  /* hazards far→near */
+  const hs = DR.hazards.filter(h => {
+    const rel = h.p - DR.pos;
+    return rel > 0.2 && rel < DR_SEGN - 2;
+  }).sort((a,b) => (b.p - a.p));
+  for (const h of hs){
+    const rel = h.p - DR.pos;
+    const n = Math.max(1, Math.min(DR_SEGN, Math.floor(rel + frac)));
     const r = rows[n];
-    if (!r || !r.vis) continue;
-    const sx = r.x + laneX(sp.lane) * r.w;
-    if (sp.kind === 'car'){
-      const cw2 = r.w * 0.4, chh = cw2 * 0.64;
-      cx.fillStyle = 'rgba(0,0,0,.25)';
-      cx.beginPath(); cx.ellipse(sx, r.y + 2, cw2*0.55, chh*0.15, 0, 0, Math.PI*2); cx.fill();
-      cx.fillStyle = '#0C0C10';
-      cx.fillRect(sx - cw2*0.56, r.y - chh*0.34, cw2*0.14, chh*0.38);
-      cx.fillRect(sx + cw2*0.42, r.y - chh*0.34, cw2*0.14, chh*0.38);
-      const tg = cx.createLinearGradient(sx, r.y - chh, sx, r.y);
-      tg.addColorStop(0, '#34343E'); tg.addColorStop(0.5, '#1B1B22'); tg.addColorStop(1, '#0E0E12');
-      cx.fillStyle = tg;
-      rrp(sx - cw2/2, r.y - chh*0.7, cw2, chh*0.7, chh*0.16); cx.fill();
-      cx.fillStyle = '#3E3E4A';
-      rrp(sx - cw2*0.32, r.y - chh, cw2*0.64, chh*0.42, chh*0.12); cx.fill();
-      cx.fillStyle = 'rgba(251,249,242,.15)';
-      cx.fillRect(sx - cw2*0.26, r.y - chh*0.94, cw2*0.52, chh*0.13);
-      cx.fillStyle = '#F0149C';
-      cx.fillRect(sx - cw2*0.44, r.y - chh*0.1, cw2*0.15, chh*0.09);
-      cx.fillRect(sx + cw2*0.29, r.y - chh*0.1, cw2*0.15, chh*0.09);
-    } else if (sp.kind === 'cone'){
-      const ch2 = Math.max(5, r.w * 0.11);
+    if (!r) continue;
+    const lf = h.k === 'truck' && h.lf !== undefined ? h.lf : h.l;
+    const li0 = Math.max(0, Math.min(L.length-1, Math.floor(lf)));
+    const li1 = Math.max(0, Math.min(L.length-1, Math.ceil(lf)));
+    const lx = L[li0] + (L[li1] - L[li0]) * (lf - li0);
+    const sx = r.x + lx * r.w;
+    if (h.k === 'cone'){
+      const c2 = Math.max(5, r.w * 0.09);
       cx.fillStyle = 'rgba(0,0,0,.2)';
-      cx.beginPath(); cx.ellipse(sx, r.y + 1, ch2*0.7, ch2*0.16, 0, 0, Math.PI*2); cx.fill();
+      cx.beginPath(); cx.ellipse(sx, r.y + 1, c2*0.7, c2*0.16, 0, 0, Math.PI*2); cx.fill();
       cx.fillStyle = '#F0149C';
       cx.beginPath();
-      cx.moveTo(sx, r.y - ch2*1.5); cx.lineTo(sx - ch2*0.62, r.y); cx.lineTo(sx + ch2*0.62, r.y);
+      cx.moveTo(sx, r.y - c2*1.5); cx.lineTo(sx - c2*0.62, r.y); cx.lineTo(sx + c2*0.62, r.y);
       cx.closePath(); cx.fill();
       cx.strokeStyle = '#111114'; cx.lineWidth = 1.6; cx.stroke();
       cx.fillStyle = '#FBF9F2';
-      cx.fillRect(sx - ch2*0.4, r.y - ch2*0.85, ch2*0.8, ch2*0.26);
-      cx.fillStyle = '#111114';
-      cx.fillRect(sx - ch2*0.72, r.y - ch2*0.08, ch2*1.44, ch2*0.14);
-    } else if (sp.kind === 'bar'){
-      const bw4 = Math.max(8, r.w * 0.24), bh4 = bw4*0.42;
+      cx.fillRect(sx - c2*0.4, r.y - c2*0.85, c2*0.8, c2*0.26);
+    } else if (h.k === 'bar'){
+      const bw4 = Math.max(9, r.w * 0.2), bh4 = bw4*0.4;
       cx.fillStyle = 'rgba(0,0,0,.2)';
       cx.beginPath(); cx.ellipse(sx, r.y + 1, bw4*0.6, bh4*0.2, 0, 0, Math.PI*2); cx.fill();
       cx.fillStyle = '#111114';
@@ -2454,41 +2027,62 @@ function drawDrive2(dt){
       cx.restore();
       cx.strokeStyle = '#111114'; cx.lineWidth = 2;
       cx.strokeRect(sx - bw4/2, r.y - bh4*2.1, bw4, bh4);
-    } else if (sp.kind === 'n'){
-      const rr2 = Math.max(4, r.w * 0.12);
-      const bob = Math.sin(performance.now()/180 + sp.rel)*rr2*0.3;
-      cx.beginPath(); cx.arc(sx, r.y - rr2*1.3 + bob, rr2, 0, Math.PI*2);
-      cx.fillStyle = '#F0149C'; cx.fill();
+    } else if (h.k === 'truck'){
+      const tw2 = Math.max(10, r.w * 0.46), th2 = tw2 * 0.8;
+      cx.fillStyle = 'rgba(0,0,0,.25)';
+      cx.beginPath(); cx.ellipse(sx, r.y + 2, tw2*0.55, th2*0.12, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = '#0C0C10';
+      cx.fillRect(sx - tw2*0.55, r.y - th2*0.3, tw2*0.13, th2*0.34);
+      cx.fillRect(sx + tw2*0.42, r.y - th2*0.3, tw2*0.13, th2*0.34);
+      const tg = cx.createLinearGradient(sx, r.y - th2, sx, r.y);
+      tg.addColorStop(0, '#3A3A44'); tg.addColorStop(1, '#191920');
+      cx.fillStyle = tg;
+      rrp(sx - tw2/2, r.y - th2, tw2, th2, th2*0.1); cx.fill();
       cx.strokeStyle = '#111114'; cx.lineWidth = 2; cx.stroke();
-      if (r.s > 0.15){
-        cx.font = rr2*1.2 + 'px serif';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('🎧', sx, r.y - rr2*1.25 + bob);
-      }
-    } else {
-      const rr2 = Math.max(5, r.w * 0.13);
-      cx.imageSmoothingEnabled = false;
       cx.fillStyle = '#F0149C';
-      cx.fillRect(sx - rr2, r.y - rr2*2.3, rr2*2, rr2*2);
-      if (FACES[sp.fi]) cx.drawImage(FACES[sp.fi], sx - rr2 + 2, r.y - rr2*2.3 + 2, rr2*2 - 4, rr2*2 - 4);
-      cx.imageSmoothingEnabled = true;
-      cx.strokeStyle = '#111114'; cx.lineWidth = 2;
-      cx.strokeRect(sx - rr2, r.y - rr2*2.3, rr2*2, rr2*2);
+      cx.fillRect(sx - tw2*0.44, r.y - th2*0.12, tw2*0.16, th2*0.1);
+      cx.fillRect(sx + tw2*0.28, r.y - th2*0.12, tw2*0.16, th2*0.1);
+      /* merge indicator */
+      if (h.to !== undefined && Math.abs((h.lf||h.l) - h.to) > 0.05){
+        cx.fillStyle = '#FFB300';
+        const dir = h.to > h.l ? 1 : -1;
+        if (Math.floor(performance.now()/300) % 2 === 0){
+          cx.beginPath();
+          cx.moveTo(sx + dir*tw2*0.62, r.y - th2*0.5);
+          cx.lineTo(sx + dir*tw2*0.62 + dir*tw2*0.14, r.y - th2*0.4);
+          cx.lineTo(sx + dir*tw2*0.62, r.y - th2*0.3);
+          cx.closePath(); cx.fill();
+        }
+      }
+    } else if (h.k === 'oil'){
+      cx.fillStyle = 'rgba(20,18,26,.75)';
+      cx.beginPath(); cx.ellipse(sx, r.y - r.w*0.02, r.w*0.14, r.w*0.05, 0, 0, Math.PI*2); cx.fill();
+      cx.fillStyle = 'rgba(240,20,156,.25)';
+      cx.beginPath(); cx.ellipse(sx - r.w*0.03, r.y - r.w*0.03, r.w*0.05, r.w*0.016, 0, 0, Math.PI*2); cx.fill();
     }
   }
-  /* player car: flat-shaded 3d with animated wheels + cabin parallax */
-  const invBlink2 = DRV.inv > 0 && Math.floor(performance.now()/90) % 2 === 0;
-  if (invBlink2){
-    /* skip car body while blinking invincible */
-  } else {
-  const pcx2 = W/2, pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095));
-  const carW = Math.min(W*(portrait ? 0.42 : 0.24), 215), carH = carW*0.56;
-  const tilt = bankSteer*0.11 + Math.sin(performance.now()/70)*0.01*(DRV.speed/DRV.max)
-    + (DRV.crashT > 0 ? Math.sin(performance.now()/40)*0.14 : 0);
+  /* speed lines above 70 boost */
+  if (DR.boost > 70 && !reduceMotion){
+    cx.strokeStyle = 'rgba(17,17,20,.18)';
+    cx.lineWidth = 2;
+    for (let l2 = 0; l2 < 6; l2++){
+      const ly = horizon + Math.random()*(H - horizon);
+      const side = l2 % 2 ? W - Math.random()*W*0.12 : Math.random()*W*0.12;
+      cx.beginPath(); cx.moveTo(side, ly); cx.lineTo(side, ly + 30 + Math.random()*50); cx.stroke();
+    }
+  }
+  /* player car */
+  const laneDelta = DR_LANESETS[DR.laneN][DR.lane] - DR.px;
+  const boostPull = DR.boost/100;
+  const pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095)) + boostPull*H*0.012;
+  const carW = Math.min(W*(portrait ? 0.4 : 0.23), 205) * (1 - boostPull*0.06);
+  const carH = carW*0.56;
+  const tilt = Math.max(-1, Math.min(1, laneDelta*3))*0.1
+    + (DR.oil > 0 ? Math.sin(performance.now()/50)*0.05 : 0);
   cx.save();
-  cx.translate(pcx2, pcy);
+  cx.translate(W/2, pcy);
   cx.rotate(tilt);
-  if (DRV.boost > 0){
+  if (DR.boosting){
     cx.fillStyle = 'rgba(240,20,156,.85)';
     const fl = carH*(0.35 + Math.random()*0.4);
     cx.beginPath();
@@ -2503,7 +2097,6 @@ function drawDrive2(dt){
   }
   cx.fillStyle = 'rgba(0,0,0,.3)';
   cx.beginPath(); cx.ellipse(0, carH*0.34, carW*0.56, carH*0.13, 0, 0, Math.PI*2); cx.fill();
-  /* wheels with scrolling tread */
   for (const side of [-1,1]){
     const wx2 = side < 0 ? -carW*0.56 : carW*0.39;
     cx.fillStyle = '#0C0C10';
@@ -2512,7 +2105,7 @@ function drawDrive2(dt){
     cx.beginPath(); cx.rect(wx2, -carH*0.04, carW*0.17, carH*0.42); cx.clip();
     cx.fillStyle = '#2E2E38';
     const tread = carH*0.14;
-    const toff2 = (DRV.pos*80) % tread;
+    const toff2 = (DR.pos*80) % tread;
     for (let ty = -carH*0.04 - tread + toff2; ty < carH*0.4; ty += tread){
       cx.fillRect(wx2, ty, carW*0.17, tread*0.35);
     }
@@ -2520,15 +2113,14 @@ function drawDrive2(dt){
   }
   const bgrad = cx.createLinearGradient(0, -carH*0.5, 0, carH*0.35);
   bgrad.addColorStop(0, '#FF63B8'); bgrad.addColorStop(0.55, '#F0149C'); bgrad.addColorStop(1, '#B80D77');
-  cx.fillStyle = (DRV.crashT > 0 && Math.floor(performance.now()/80)%2) ? '#FF9DD2' : bgrad;
+  cx.fillStyle = bgrad;
   rrp(-carW*0.48, -carH*0.18, carW*0.96, carH*0.52, carH*0.14);
   cx.fill();
   cx.strokeStyle = '#111114'; cx.lineWidth = 3; cx.stroke();
   cx.fillStyle = 'rgba(17,17,20,.2)';
   rrp(-carW*0.46, carH*0.2, carW*0.92, carH*0.12, carH*0.06); cx.fill();
-  /* cabin parallax: shifts opposite the steer for fake yaw */
   cx.save();
-  cx.translate(-bankSteer*carW*0.06, 0);
+  cx.translate(-Math.max(-1, Math.min(1, laneDelta*3))*carW*0.05, 0);
   const cabW = carW*0.58;
   const cgrad = cx.createLinearGradient(0, -carH*0.56, 0, -carH*0.1);
   cgrad.addColorStop(0, '#23232B'); cgrad.addColorStop(1, '#101014');
@@ -2548,34 +2140,28 @@ function drawDrive2(dt){
   rrp(-carW*0.44, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
   rrp(carW*0.30, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
   cx.restore();
+  /* wordless steering prompt until first input */
+  if (!DR.moved && !DR.dead){
+    cx.fillStyle = 'rgba(17,17,20,'+(0.35 + 0.25*Math.sin(performance.now()/300))+')';
+    const py = H - Math.max(120, H*0.22);
+    for (const side of [-1,1]){
+      cx.beginPath();
+      const bx2 = W/2 + side*Math.min(W*0.24, 150);
+      cx.moveTo(bx2 - side*14, py - 12);
+      cx.lineTo(bx2 + side*6, py);
+      cx.lineTo(bx2 - side*14, py + 12);
+      cx.lineWidth = 6; cx.strokeStyle = cx.fillStyle; cx.lineCap='round'; cx.lineJoin='round';
+      cx.stroke();
+    }
   }
   /* particles */
   for (const p of parts){
     cx.globalAlpha = Math.max(0, 1 - p.t/p.life);
-    if (p.kind === 'txt'){
-      cx.fillStyle = p.c;
-      cx.font = '700 16px "Space Mono", monospace';
-      cx.textAlign = 'center'; cx.textBaseline = 'middle';
-      cx.fillText(p.text, p.x, p.y);
-    } else {
-      cx.fillStyle = p.c;
-      cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
-    }
+    cx.fillStyle = p.c;
+    cx.fillRect(p.x - p.r, p.y - p.r, p.r*2, p.r*2);
   }
   cx.globalAlpha = 1;
 }
-
-/* drive controls */
-addEventListener('keydown', e => {
-  if (!DRV.on) return;
-  if ((e.code === 'ArrowLeft' || e.code === 'KeyA') && !e.repeat) laneMove(-1);
-  if ((e.code === 'ArrowRight' || e.code === 'KeyD') && !e.repeat) laneMove(1);
-  if (e.code === 'Space' || e.code === 'ShiftLeft'){ e.preventDefault(); DRV.nHold = true; }
-});
-addEventListener('keyup', e => {
-  if (e.code === 'Space' || e.code === 'ShiftLeft') DRV.nHold = false;
-});
-
 /* ================= GLITCH DIALOGS ================= */
 const dlg = { open:false, timers:[], onX:null };
 function showDlg(title, text, emojiSets, buttons, photo){
@@ -2938,12 +2524,18 @@ function draw(dt){
 /* ================= LOOP ================= */
 let lastT = performance.now();
 function frame(t){
-  const dt = Math.min(0.033, (t-lastT)/1000); lastT = t;
-  if (DRV.on){
-    if (!dlg.open) stepDrive(dt);
-    if (DRV.on) drawDrive2(dt);
+  const dt = Math.min(0.1, (t-lastT)/1000); lastT = t;
+  if (DR.on){
+    /* deterministic fixed timestep: no frame hitch can teleport the car */
+    DR.acc = Math.min(DR.acc + dt, 0.12);
+    while (DR.acc >= DR_DT){
+      drStep();
+      DR.acc -= DR_DT;
+    }
+    stepParts(dt);
+    if (DR.on) drDraw();
   } else {
-    stepGame(dt);
+    stepGame(Math.min(0.033, dt));
     stepParts(dt);
     draw(dt);
   }
