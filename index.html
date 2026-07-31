@@ -101,9 +101,13 @@
     display:flex; flex-direction:column; align-items:center; gap:8px}
   #nbar{width:110px; height:12px; border:2px solid var(--ink); background:var(--panel)}
   #nfill{height:100%; width:0%; background:repeating-linear-gradient(90deg,var(--pink) 0 7px,#FF62BE 7px 14px)}
-  #nitrobtn{width:92px; height:92px; border-radius:50%; border:3px solid var(--ink);
-    background:var(--pink); color:var(--ink); font-family:var(--pxf); font-size:11px;
+  #nitrobtn{width:84px; height:84px; border-radius:50%; border:3px solid var(--ink);
+    background:var(--pink); font-size:34px; line-height:1;
     box-shadow:5px 5px 0 var(--ink); cursor:pointer; touch-action:none; user-select:none}
+  #dtimepill.ckflash{background:var(--pink); transition:background .15s}
+  #nbar.nflash{border-color:var(--pink)}
+  #drivehint{display:none !important}
+  #hint{display:none !important}
   #nitrobtn:active{transform:translate(3px,3px); box-shadow:0 0 0}
   #drivehint{position:fixed; left:16px; bottom:max(18px,env(safe-area-inset-bottom)); z-index:11;
     font-family:var(--mono); font-size:13px; color:var(--dim); line-height:1.6; pointer-events:none}
@@ -385,8 +389,7 @@
       <button class="pol" data-p="cake" data-c="the cake"><img id="w3" alt="the cake"><div class="pc">THE CAKE</div></button>
       <button class="pol" data-p="kurta" data-c="the drip"><img id="w4" alt="the drip"><div class="pc">THE DRIP</div></button>
     </div>
-    <div id="introline">jump over everything holding india back.<br>collect <em>₹100 crore</em>. close the round.</div>
-    <div id="howto">tap = jump · tap again mid-air = double jump<br>land on blocks. grab the crores. do not trip on the 9-5.</div>
+    <div id="introline">four games. one bold studio. <em>full send.</em></div>
     <div id="modebtns">
       <button id="drivebtn">🏎️ OFF/BEAT DRIVE<small>full send racer · new</small></button>
       <button id="startbtn">🏃 THE RUN</button>
@@ -476,13 +479,13 @@
 <div id="dhud" class="hidden">
   <span class="pill" id="dlives"></span>
   <span class="pill" id="dtimepill">⏱ <b id="dtime">60</b>s</span>
-  <span class="pill"><b id="dspd">0</b> km/h</span>
-  <span class="pill">₹<b id="dcr">0</b> Cr</span>
-  <span class="pill">overtakes <b id="dot">0</b></span>
+  <span class="pill" style="display:none"><b id="dspd">0</b></span>
+  <span class="pill" style="display:none"><b id="dcr">0</b></span>
+  <span class="pill" style="display:none"><b id="dot">0</b></span>
 </div>
 <div id="nitrowrap" class="hidden">
   <div id="nbar"><div id="nfill"></div></div>
-  <button id="nitrobtn">NITRO 🎧</button>
+  <button id="nitrobtn">🎧</button>
 </div>
 <div id="drivehint" class="hidden">← → steer · hold SPACE = nitro<br>🎧 fills nitro · dodge boring corp</div>
 
@@ -1734,11 +1737,10 @@ function crashHit(what){
   DRV.streak = 0;
   DRV.crashT = 1.0;
   DRV.speed *= 0.45;
-  G.shake = reduceMotion ? 0 : 18;
+  G.shake = reduceMotion ? 0 : 10;
   sfx.die();
   if (DRV.lives <= 0){ crashOut(); return; }
   DRV.inv = 2.0;
-  judge('💥 ' + what);
 }
 function crashOut(){
   DRV.dead = true;
@@ -1789,13 +1791,13 @@ function stepDrive(dt){
       y: H - Math.max(40, H*0.07), vx:(Math.random()-0.5)*120 - laneDelta*300,
       vy: 40+Math.random()*90, life:.3, t:0, r:2.5, c:'#F0149C' });
   }
-  /* checkpoint */
+  /* checkpoint: pill flashes pink, no words */
   if (DRV.pos - DRV.lastCk > 300){
     DRV.lastCk = DRV.pos;
     DRV.timeLeft += 12;
-    judge('CHECKPOINT +12s');
     sfx.ding();
-    confetti(W/2, H*0.3, 16);
+    $('dtimepill').classList.add('ckflash');
+    setTimeout(()=>$('dtimepill').classList.remove('ckflash'), 700);
   }
   /* traffic: lane-locked, predictable */
   for (const car of DRV.cars){
@@ -1806,9 +1808,9 @@ function stepDrive(dt){
       DRV.streak++;
       if (Math.abs(car.lane - DRV.lane) === 1){
         DRV.nitro = Math.min(100, DRV.nitro + 10);
-        parts.push({ kind:'txt', text:'CLOSE! +nitro', x:W/2, y:H*0.5, vx:0, vy:-70, life:.6, t:0, r:0, c:'#F0149C' });
+        $('nbar').classList.add('nflash');
+        setTimeout(()=>$('nbar').classList.remove('nflash'), 400);
       }
-      if (DRV.streak > 0 && DRV.streak % 5 === 0){ judge('OVERTAKE x' + DRV.streak + ' 🔥'); sfx.ding(); }
       car.p = DRV.pos + 50 + Math.random()*40;
       car.lane = Math.floor(Math.random()*4);
       sfx.coin(2);
@@ -1847,13 +1849,14 @@ function stepDrive(dt){
       pk.dead = true;
       if (pk.kind === 'n'){
         DRV.nitro = Math.min(100, DRV.nitro + 34);
-        sfx.pop ? sfx.pop(700) : sfx.ding();
-        parts.push({ kind:'txt', text:'+NITRO 🎧', x:W/2, y:H*0.55, vx:0, vy:-80, life:.7, t:0, r:0, c:'#F0149C' });
+        sfx.pop(700);
+        $('nbar').classList.add('nflash');
+        setTimeout(()=>$('nbar').classList.remove('nflash'), 400);
       } else {
         DRV.cr += 5; $('dcr').textContent = DRV.cr;
         sfx.ding();
-        parts.push({ kind:'txt', text:'+₹5 aman card', x:W/2, y:H*0.55, vx:0, vy:-80, life:.7, t:0, r:0, c:'#F0149C' });
       }
+      coinPop(W/2, H*0.55);
     }
   }
   $('nfill').style.width = DRV.nitro + '%';
@@ -2167,7 +2170,7 @@ function drawDrive(dt){
 /* ===== drive engine v2: true pseudo-3d projection, crest clipping ===== */
 const SEG_N = 62;
 function dCurve2(i){ return Math.sin(i/38)*1.0 + Math.sin(i/91)*0.7; }
-function dHill2(i){ return Math.sin(i/42)*1.0 + Math.sin(i/23)*0.3; }
+function dHill2(i){ return 0; }
 function drawDrive2(dt){
   cx.setTransform(DPR,0,0,DPR,0,0);
   if (G.shake > 0.3){
@@ -2177,7 +2180,7 @@ function drawDrive2(dt){
   const bankSteer = Math.max(-1, Math.min(1, (D_LANES[DRV.lane] - DRV.px)*3));
   if (!reduceMotion){
     const bank = (bankSteer*0.5 + dCurve2(Math.floor(DRV.pos))*0.4) * (DRV.speed/DRV.max);
-    cx.translate(W/2, H); cx.rotate(bank*0.04); cx.translate(-W/2, -H);
+    cx.translate(W/2, H); cx.rotate(bank*0.02); cx.translate(-W/2, -H);
   }
   const portrait = W < H;
   const horizon = H*(portrait ? 0.34 : 0.40);
@@ -2285,11 +2288,11 @@ function drawDrive2(dt){
       cx.fillRect(bx - bw3/2, r.y - bh3*2, bw3, bh3);
       cx.fillStyle = '#111114';
       cx.fillRect(bx - 2, r.y - bh3, 4, bh3);
-      if (r.s > 0.25){
-        cx.font = '700 ' + Math.max(7, bh3*0.42) + 'px "Archivo Black", sans-serif';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('OFF/BEAT', bx, r.y - bh3*1.5);
-      }
+      cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(2, bh3*0.14); cx.lineCap = 'round';
+      cx.beginPath();
+      cx.moveTo(bx + bw3*0.08, r.y - bh3*1.82);
+      cx.lineTo(bx - bw3*0.08, r.y - bh3*1.18);
+      cx.stroke();
     }
     minY = r.y;
     prev = r;
@@ -2329,12 +2332,6 @@ function drawDrive2(dt){
       rrp(sx - cw2*0.32, r.y - chh, cw2*0.64, chh*0.42, chh*0.12); cx.fill();
       cx.fillStyle = 'rgba(251,249,242,.15)';
       cx.fillRect(sx - cw2*0.26, r.y - chh*0.94, cw2*0.52, chh*0.13);
-      if (r.s > 0.2){
-        cx.fillStyle = '#FBF9F2';
-        cx.font = '700 ' + Math.max(6, cw2*0.15) + 'px "Space Mono", monospace';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText('BORING', sx, r.y - chh*0.34);
-      }
       cx.fillStyle = '#F0149C';
       cx.fillRect(sx - cw2*0.44, r.y - chh*0.1, cw2*0.15, chh*0.09);
       cx.fillRect(sx + cw2*0.29, r.y - chh*0.1, cw2*0.15, chh*0.09);
@@ -2372,12 +2369,6 @@ function drawDrive2(dt){
       cx.restore();
       cx.strokeStyle = '#111114'; cx.lineWidth = 2;
       cx.strokeRect(sx - bw4/2, r.y - bh4*2.1, bw4, bh4);
-      if (r.s > 0.22 && sp.label){
-        cx.fillStyle = '#111114';
-        cx.font = '700 ' + Math.max(6, bh4*0.5) + 'px "Space Mono", monospace';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.fillText(sp.label, sx, r.y - bh4*2.55);
-      }
     } else if (sp.kind === 'n'){
       const rr2 = Math.max(4, r.w * 0.12);
       const bob = Math.sin(performance.now()/180 + sp.rel)*rr2*0.3;
