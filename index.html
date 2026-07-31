@@ -1637,7 +1637,9 @@ const DRV = {
   timeLeft:60, ot:0, cr:0, nitro:40, nHold:false, boost:0, crashT:0, count:0, lastN:-1,
   streak:0, lives:3, inv:0, cars:[], picks:[], hurdles:[], topSpd:0, lastCk:0,
   beatT:0, beatIdx:0, beatTimer:null, eng:null, dead:false,
+  twFrom:0, twT0:0, queued:0, chain:0, lastGraze:0, ts:1, tsT:0, freeze:0,
 };
+const GRAZE_SCALE = [392, 440, 494, 587, 659, 784, 880, 988, 1175];
 const HURDLE_LABELS = ['9-5','EMI','DOUBT','MEETING','EXCUSES'];
 const DRV_N = 70;
 function dCurve(i){ return Math.sin(i/47)*1.9 + Math.sin(i/113)*1.4; }
@@ -1660,10 +1662,12 @@ function startDrive(){
   Object.assign(DRV, { on:true, pos:0, speed:0, px:D_LANES[1], lane:1, timeLeft:60, ot:0, cr:0,
     nitro:40, nHold:false, boost:0, crashT:0, topSpd:0, lastCk:0, beatIdx:0,
     count:3.0, lastN:-1, streak:0, lives:3, inv:0, dead:false, touchX:null,
+    twFrom:D_LANES[1], twT0:0, queued:0, chain:0, lastGraze:0, ts:1, tsT:0, freeze:0,
     cars:[], picks:[], hurdles:[] });
   for (let c=0;c<7;c++){
-    DRV.cars.push({ p: 26 + c*16 + Math.random()*6, lane: Math.floor(Math.random()*4),
-      spd: 21 + Math.random()*8 });
+    const ln = Math.floor(Math.random()*4);
+    DRV.cars.push({ p: 26 + c*16 + Math.random()*6, lane: ln, laneF: ln,
+      spd: 21 + Math.random()*8, mv: null, passed: false });
   }
   for (let c=0;c<10;c++){
     DRV.hurdles.push({ p: 20 + c*13 + Math.random()*5, lane: Math.floor(Math.random()*4),
@@ -1727,8 +1731,40 @@ function drawDriveLives(){
 }
 function laneMove(dir){
   if (!DRV.on || DRV.dead || DRV.count > 0) return;
+  const now = performance.now();
+  /* committed for first 90ms of a swap; buffer the input instead */
+  if (now - DRV.twT0 < 90){ DRV.queued = dir; return; }
   const nl = Math.max(0, Math.min(3, DRV.lane + dir));
-  if (nl !== DRV.lane){ DRV.lane = nl; sfx.ui(); }
+  if (nl !== DRV.lane){
+    DRV.twFrom = DRV.px;
+    DRV.twT0 = now;
+    DRV.lane = nl;
+    sfx.ui();
+  }
+}
+function grazeHit(){
+  const now = performance.now();
+  DRV.chain = (now - DRV.lastGraze < 3000) ? DRV.chain + 1 : 1;
+  DRV.lastGraze = now;
+  DRV.nitro = Math.min(100, DRV.nitro + Math.min(15, 8 + DRV.chain));
+  $('nbar').classList.add('nflash');
+  setTimeout(()=>$('nbar').classList.remove('nflash'), 300);
+  /* ascending melody: each clean graze plays the next note */
+  const f = GRAZE_SCALE[Math.min(DRV.chain - 1, GRAZE_SCALE.length - 1)];
+  blipNow(f, f*1.02, 0.1, 0.22);
+  blipNow(85, 55, 0.07, 0.1, 'sine');
+  /* 110ms of 0.35x time, then snap back */
+  if (!reduceMotion){ DRV.ts = 0.35; DRV.tsT = 0.11; }
+  parts.push({ kind:'spark', x: W/2 + (Math.random()<0.5?-1:1)*Math.min(W*0.14,100),
+    y: H - Math.max(50, H*0.1), vx:(Math.random()-0.5)*200, vy:-60-Math.random()*80,
+    life:.35, t:0, r:3, c:'#F0149C' });
+}
+function pickFreeLane(p){
+  const busy = new Set();
+  for (const c of DRV.cars) if (Math.abs(c.p - p) < 4.5) busy.add(Math.round(c.laneF !== undefined ? c.laneF : c.lane));
+  for (const h of DRV.hurdles) if (Math.abs(h.p - p) < 4.5) busy.add(h.lane);
+  const free = [0,1,2,3].filter(l => !busy.has(l));
+  return free.length ? free[Math.floor(Math.random()*free.length)] : Math.floor(Math.random()*4);
 }
 function crashHit(what){
   if (DRV.inv > 0 || DRV.dead) return;
@@ -1736,26 +1772,44 @@ function crashHit(what){
   drawDriveLives();
   DRV.streak = 0;
   DRV.crashT = 1.0;
+  DRV.chain = 0;
+  DRV.freeze = 0.07;
   DRV.speed *= 0.45;
   G.shake = reduceMotion ? 0 : 10;
   sfx.die();
   if (DRV.lives <= 0){ crashOut(); return; }
   DRV.inv = 2.0;
 }
+let wastedT = null;
 function crashOut(){
   DRV.dead = true;
   if (FACE0URL) $('wastedimg').src = FACE0URL;
   $('wasted').classList.remove('hidden');
   sfx.die();
   setTimeout(() => { blipNow(300,120,0.1,0.3,'square'); }, 200);
-  setTimeout(() => {
+  clearTimeout(wastedT);
+  wastedT = setTimeout(() => {
     $('wasted').classList.add('hidden');
     endDrive();
-  }, 2000);
+  }, 1300);
 }
+/* tap the laugh = instant restart, no menu step */
+$('wasted').addEventListener('pointerdown', () => {
+  clearTimeout(wastedT);
+  $('wasted').classList.add('hidden');
+  startDrive();
+});
 function stepDrive(dt){
   if (!DRV.on) return;
   if (DRV.dead) return;
+  /* crash freeze frames */
+  if (DRV.freeze > 0){ DRV.freeze -= dt; return; }
+  /* graze slow-mo */
+  if (DRV.tsT > 0){
+    DRV.tsT -= dt;
+    if (DRV.tsT <= 0) DRV.ts = 1;
+    dt *= DRV.ts;
+  }
   /* 3-2-1-GO countdown */
   if (DRV.count > 0){
     DRV.count -= dt;
@@ -1770,10 +1824,11 @@ function stepDrive(dt){
   DRV.timeLeft -= dt;
   if (DRV.timeLeft <= 0){ endDrive(); return; }
   $('dtime').textContent = Math.ceil(DRV.timeLeft);
-  /* speed */
+  /* boost economy: graze to earn, idle drains, boosting burns */
   DRV.boost = (DRV.nHold && DRV.nitro > 0) ? 1 : Math.max(0, DRV.boost - dt*3);
-  if (DRV.nHold && DRV.nitro > 0) DRV.nitro = Math.max(0, DRV.nitro - dt*26);
-  const targetMax = DRV.max * (DRV.boost > 0 ? 1.35 : 1);
+  DRV.nitro = Math.max(0, DRV.nitro - dt*(DRV.nHold && DRV.nitro > 0 ? 20 : 2));
+  if (performance.now() - DRV.lastGraze > 3000) DRV.chain = 0;
+  const targetMax = DRV.max * (DRV.boost > 0 ? 1.6 : 1);
   if (DRV.crashT > 0){ DRV.crashT -= dt; }
   if (DRV.inv > 0){ DRV.inv -= dt; }
   DRV.speed += (targetMax - DRV.speed) * Math.min(1, dt * (DRV.speed < targetMax ? 0.6 : 3));
@@ -1781,10 +1836,19 @@ function stepDrive(dt){
   const kmh = Math.round(DRV.speed * 6.2 * (DRV.boost > 0 ? 1.1 : 1));
   DRV.topSpd = Math.max(DRV.topSpd, kmh);
   $('dspd').textContent = kmh;
-  /* lane-snap steering: buttery ease to target lane */
+  /* lane tween: 140ms with overshoot, buffered inputs chain */
   const laneTarget = D_LANES[DRV.lane];
+  const tw = (performance.now() - DRV.twT0) / 140;
+  if (tw < 1){
+    const s = 1.35;
+    const t2 = tw - 1;
+    const eob = 1 + (s + 1)*t2*t2*t2 + s*t2*t2; /* easeOutBack */
+    DRV.px = DRV.twFrom + (laneTarget - DRV.twFrom) * eob;
+  } else {
+    DRV.px = laneTarget;
+    if (DRV.queued){ const q = DRV.queued; DRV.queued = 0; laneMove(q); }
+  }
   const laneDelta = laneTarget - DRV.px;
-  DRV.px += laneDelta * Math.min(1, dt*9);
   /* drift sparks on lane change at speed */
   if (Math.abs(laneDelta) > 0.12 && DRV.speed > DRV.max*0.6 && !reduceMotion && Math.random() < 0.5){
     parts.push({ kind:'spark', x: W/2 + (laneDelta>0?-1:1)*Math.min(W*0.1,80),
@@ -1799,41 +1863,57 @@ function stepDrive(dt){
     $('dtimepill').classList.add('ckflash');
     setTimeout(()=>$('dtimepill').classList.remove('ckflash'), 700);
   }
-  /* traffic: lane-locked, predictable */
+  /* traffic: drifting rivals — prediction over reaction */
   for (const car of DRV.cars){
     car.p += car.spd * dt;
     const rel = car.p - DRV.pos;
-    if (rel < -3){
+    /* occasional slow merge into a neighbor lane, only while far ahead */
+    if (!car.mv && rel > 7 && Math.random() < dt*0.12){
+      const to = Math.max(0, Math.min(3, car.lane + (Math.random()<0.5?-1:1)));
+      if (to !== car.lane) car.mv = { from: car.laneF, to, t0: performance.now() };
+    }
+    if (car.mv){
+      const mt = (performance.now() - car.mv.t0)/900;
+      if (mt >= 1){ car.laneF = car.mv.to; car.lane = car.mv.to; car.mv = null; }
+      else car.laneF = car.mv.from + (car.mv.to - car.mv.from)*(mt*mt*(3-2*mt));
+    }
+    const carLane = Math.round(car.laneF);
+    if (!car.passed && rel < -0.15){
+      car.passed = true;
       DRV.ot++; $('dot').textContent = DRV.ot;
       DRV.streak++;
-      if (Math.abs(car.lane - DRV.lane) === 1){
-        DRV.nitro = Math.min(100, DRV.nitro + 10);
-        $('nbar').classList.add('nflash');
-        setTimeout(()=>$('nbar').classList.remove('nflash'), 400);
-      }
+      if (Math.abs(carLane - DRV.lane) === 1) grazeHit();
+    }
+    if (rel < -3){
       car.p = DRV.pos + 50 + Math.random()*40;
-      car.lane = Math.floor(Math.random()*4);
-      sfx.coin(2);
-    } else if (rel < 0.9 && rel > -0.1 && car.lane === DRV.lane){
+      car.lane = pickFreeLane(car.p);
+      car.laneF = car.lane; car.mv = null; car.passed = false;
+    } else if (rel < 0.9 && rel > -0.1 && carLane === DRV.lane){
       crashHit('BORING CORP SEDAN');
       if (DRV.dead) return;
       car.p = DRV.pos + 45 + Math.random()*30;
-      car.lane = Math.floor(Math.random()*4);
+      car.lane = pickFreeLane(car.p);
+      car.laneF = car.lane; car.mv = null; car.passed = false;
     }
   }
-  /* hurdles: static roadblocks */
+  /* hurdles: static roadblocks with graze bands */
   for (const h of DRV.hurdles){
     const rel = h.p - DRV.pos;
+    if (!h.passed && rel < -0.15){
+      h.passed = true;
+      if (Math.abs(h.lane - DRV.lane) === 1) grazeHit();
+    }
     if (rel < -2){
       h.p = DRV.pos + 60 + Math.random()*50;
-      h.lane = Math.floor(Math.random()*4);
+      h.lane = pickFreeLane(h.p);
       h.type = Math.random() < 0.6 ? 'cone' : 'bar';
-      h.label = HURDLE_LABELS[Math.floor(Math.random()*HURDLE_LABELS.length)];
+      h.passed = false;
     } else if (rel < 0.7 && rel > -0.1 && h.lane === DRV.lane){
-      crashHit(h.type === 'bar' ? h.label + ' BARRIER' : 'CONE');
+      crashHit('HURDLE');
       if (DRV.dead) return;
       h.p = DRV.pos + 55 + Math.random()*40;
-      h.lane = Math.floor(Math.random()*4);
+      h.lane = pickFreeLane(h.p);
+      h.passed = false;
     }
   }
   /* pickups */
@@ -2301,7 +2381,7 @@ function drawDrive2(dt){
   const spr = [];
   for (const car of DRV.cars){
     const rel = car.p - DRV.pos;
-    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:'car', lane:car.lane });
+    if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:'car', lane:car.laneF });
   }
   for (const pk of DRV.picks){
     const rel = pk.p - DRV.pos;
@@ -2312,11 +2392,16 @@ function drawDrive2(dt){
     if (rel > 0.3 && rel < SEG_N - 2) spr.push({ rel, kind:h.type, lane:h.lane, label:h.label });
   }
   spr.sort((a,b) => b.rel - a.rel);
+  const laneX = f => {
+    const i0 = Math.max(0, Math.min(3, Math.floor(f)));
+    const i1 = Math.max(0, Math.min(3, Math.ceil(f)));
+    return D_LANES[i0] + (D_LANES[i1] - D_LANES[i0]) * (f - i0);
+  };
   for (const sp of spr){
     const n = Math.max(1, Math.min(SEG_N, Math.floor(sp.rel + frac)));
     const r = rows[n];
     if (!r || !r.vis) continue;
-    const sx = r.x + D_LANES[sp.lane] * r.w;
+    const sx = r.x + laneX(sp.lane) * r.w;
     if (sp.kind === 'car'){
       const cw2 = r.w * 0.4, chh = cw2 * 0.64;
       cx.fillStyle = 'rgba(0,0,0,.25)';
