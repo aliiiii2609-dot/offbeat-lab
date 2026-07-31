@@ -6,7 +6,7 @@ A fan-made four-game arcade tribute to OFF/BEAT Studios. Cream, magenta, pixel A
 
 ## The games
 
-- **🏎️ NITRO DRIVE** — flat-shaded pseudo-3D racer. Drag to steer, overtake BORING corp sedans, grab 🎧 for nitro, hit checkpoints before the timer dies. Camera banking, drift sparks, near-miss bonuses, 3-2-1-GO.
+## Run
 - **🏃 THE RUN** — endless runner as the logo's slash. Jump over "9-5", "log kya kahenge", and "self doubt" blocks, collect ₹1 Cr coins and aman cards toward a ₹100 Cr seed round. 3 pixel-head lives, BASS MODE powerup.
 - **🦈 SHARK MODE** — judge 18 unhinged startup pitches (blockchain biryani, protein maggi) with I'M IN / I'M OUT under a shrinking timer. Build a portfolio, dodge the cap.
 - **😎 CEO KI KURSI** — Reigns-style card sim: one day in the boldest chair. Drag cards, balance 🔥 BOLD / 💰 CRORE / 🧘 CHILL, survive 15 meetings, seven endings.
