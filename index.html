@@ -1633,9 +1633,9 @@ $('simshare').addEventListener('click', async () => {
 const DR_DT = 1/60;
 const DR_LANESETS = { 3:[-0.6,0,0.6], 4:[-0.72,-0.24,0.24,0.72], 5:[-0.82,-0.41,0,0.41,0.82] };
 const DR_ZONES = [
-  { at:0,   road:['#2B2B32','#26262C'], grass:['#EAE6D8','#E1DDCD'], sky:['#F8F5EB','#EFEBDD'], keyRoot:0 },
-  { at:40,  road:['#33302B','#2D2A26'], grass:['#E6DCC4','#DDD2B8'], sky:['#F6EFDD','#EDE3CB'], keyRoot:2 },
-  { at:120, road:['#26262E','#212129'], grass:['#D9DBE2','#CFD2DB'], sky:['#EDF0F6','#DFE4EE'], keyRoot:4 },
+  { at:0,   road:['#2B2B32','#26262C'], grass:['#EAE6D8','#E1DDCD'], sky:['#F8F3E4','#F4D9E4'], keyRoot:0 },
+  { at:40,  road:['#33302B','#2D2A26'], grass:['#E6DCC4','#DDD2B8'], sky:['#F6EFDD','#EFD9B8'], keyRoot:2 },
+  { at:120, road:['#26262E','#212129'], grass:['#D9DBE2','#CFD2DB'], sky:['#EDF0F6','#C9D3E8'], keyRoot:4 },
 ];
 const DR_SCALE = [392, 440, 494, 587, 659, 784, 880, 988, 1175, 1319];
 /* authored chunks: len in segments, hz events at offsets, laneN required */
@@ -1914,11 +1914,15 @@ function drDraw(){
   const sg = cx.createLinearGradient(0,0,0,horizon);
   sg.addColorStop(0, Z.sky[0]); sg.addColorStop(1, Z.sky[1]);
   cx.fillStyle = sg; cx.fillRect(-40,-40,W+80,horizon+42);
-  const sunX = W*0.55 - DR.px*W*0.04, sunY = horizon - H*0.15, sunR = Math.min(W,H)*0.085;
+  /* low setting sun, half sunk behind the horizon */
+  const sunX = W*0.55 - DR.px*W*0.04, sunY = horizon - H*0.02, sunR = Math.min(W,H)*0.13;
+  cx.save();
+  cx.beginPath(); cx.rect(-40, -40, W+80, horizon+40); cx.clip();
   cx.beginPath(); cx.arc(sunX, sunY, sunR, 0, Math.PI*2);
-  cx.fillStyle = 'rgba(240,20,156,'+(DR.boosting?0.45:0.28)+')'; cx.fill();
-  cx.strokeStyle = 'rgba(17,17,20,.5)'; cx.lineWidth = Math.max(4,sunR*0.16); cx.lineCap='round';
-  cx.beginPath(); cx.moveTo(sunX+sunR*0.32, sunY-sunR*0.75); cx.lineTo(sunX-sunR*0.32, sunY+sunR*0.75); cx.stroke();
+  cx.fillStyle = 'rgba(255,214,170,.85)'; cx.fill();
+  cx.strokeStyle = 'rgba(17,17,20,.35)'; cx.lineWidth = Math.max(4,sunR*0.12); cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(sunX+sunR*0.28, sunY-sunR*0.65); cx.lineTo(sunX-sunR*0.28, sunY+sunR*0.65); cx.stroke();
+  cx.restore();
   cx.fillStyle = 'rgba(17,17,20,.07)';
   for (let b=0;b<14;b++){
     const bw2 = 40 + (b*53)%70, bh = 14 + (b*37)%42;
@@ -1951,7 +1955,7 @@ function drDraw(){
     cx.fillStyle = Z.grass[alt ? 0 : 1];
     cx.fillRect(-40, r.y, W+80, prev.y - r.y + 1);
     const rw1 = prev.w*1.14, rw2 = r.w*1.14;
-    cx.fillStyle = alt ? '#F0149C' : '#FBF9F2';
+    cx.fillStyle = alt ? '#111114' : '#FBF9F2'; /* pink is for hazards only */
     cx.beginPath();
     cx.moveTo(prev.x - rw1, prev.y); cx.lineTo(prev.x + rw1, prev.y);
     cx.lineTo(r.x + rw2, r.y); cx.lineTo(r.x - rw2, r.y);
@@ -2071,74 +2075,87 @@ function drDraw(){
       cx.beginPath(); cx.moveTo(side, ly); cx.lineTo(side, ly + 30 + Math.random()*50); cx.stroke();
     }
   }
-  /* player car */
+  /* player car: open-wheel formula wedge, rear view */
   const laneDelta = DR_LANESETS[DR.laneN][DR.lane] - DR.px;
   const boostPull = DR.boost/100;
   const pcy = H - Math.max(52, H*(portrait ? 0.115 : 0.095)) + boostPull*H*0.012;
   const carW = Math.min(W*(portrait ? 0.4 : 0.23), 205) * (1 - boostPull*0.06);
-  const carH = carW*0.56;
-  const tilt = Math.max(-1, Math.min(1, laneDelta*3))*0.1
-    + (DR.oil > 0 ? Math.sin(performance.now()/50)*0.05 : 0);
+  const carH = carW*0.6;
+  const sv = Math.max(-1, Math.min(1, laneDelta*3));
+  const tilt = sv*0.1 + (DR.oil > 0 ? Math.sin(performance.now()/50)*0.05 : 0);
   cx.save();
   cx.translate(W/2, pcy);
   cx.rotate(tilt);
+  /* exhaust flame between the tires while boosting */
   if (DR.boosting){
-    cx.fillStyle = 'rgba(240,20,156,.85)';
-    const fl = carH*(0.35 + Math.random()*0.4);
+    const fl = carH*(0.4 + Math.random()*0.45);
+    cx.fillStyle = 'rgba(240,20,156,.9)';
     cx.beginPath();
-    cx.moveTo(-carW*0.26, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl); cx.lineTo(-carW*0.06, carH*0.3);
-    cx.moveTo(carW*0.06, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.85); cx.lineTo(carW*0.26, carH*0.3);
-    cx.fill();
-    cx.fillStyle = 'rgba(251,249,242,.9)';
+    cx.moveTo(-carW*0.1, carH*0.26); cx.lineTo(0, carH*0.26 + fl); cx.lineTo(carW*0.1, carH*0.26);
+    cx.closePath(); cx.fill();
+    cx.fillStyle = 'rgba(251,249,242,.95)';
     cx.beginPath();
-    cx.moveTo(-carW*0.21, carH*0.3); cx.lineTo(-carW*0.16, carH*0.3 + fl*0.5); cx.lineTo(-carW*0.11, carH*0.3);
-    cx.moveTo(carW*0.11, carH*0.3); cx.lineTo(carW*0.16, carH*0.3 + fl*0.42); cx.lineTo(carW*0.21, carH*0.3);
-    cx.fill();
+    cx.moveTo(-carW*0.05, carH*0.26); cx.lineTo(0, carH*0.26 + fl*0.5); cx.lineTo(carW*0.05, carH*0.26);
+    cx.closePath(); cx.fill();
   }
-  cx.fillStyle = 'rgba(0,0,0,.3)';
-  cx.beginPath(); cx.ellipse(0, carH*0.34, carW*0.56, carH*0.13, 0, 0, Math.PI*2); cx.fill();
+  /* shadow */
+  cx.fillStyle = 'rgba(0,0,0,.32)';
+  cx.beginPath(); cx.ellipse(0, carH*0.3, carW*0.58, carH*0.11, 0, 0, Math.PI*2); cx.fill();
+  /* fat exposed rear tires with scrolling tread */
   for (const side of [-1,1]){
-    const wx2 = side < 0 ? -carW*0.56 : carW*0.39;
-    cx.fillStyle = '#0C0C10';
-    rrp(wx2, -carH*0.04, carW*0.17, carH*0.42, carH*0.08); cx.fill();
+    const wx2 = side*carW*0.42;
+    cx.fillStyle = '#0B0B0F';
+    rrp(wx2 - carW*0.13, -carH*0.28, carW*0.26, carH*0.58, carH*0.1); cx.fill();
     cx.save();
-    cx.beginPath(); cx.rect(wx2, -carH*0.04, carW*0.17, carH*0.42); cx.clip();
-    cx.fillStyle = '#2E2E38';
-    const tread = carH*0.14;
-    const toff2 = (DR.pos*80) % tread;
-    for (let ty = -carH*0.04 - tread + toff2; ty < carH*0.4; ty += tread){
-      cx.fillRect(wx2, ty, carW*0.17, tread*0.35);
+    cx.beginPath(); cx.rect(wx2 - carW*0.13, -carH*0.28, carW*0.26, carH*0.58); cx.clip();
+    cx.fillStyle = '#26262E';
+    const tread = carH*0.13;
+    const toff2 = (DR.pos*90) % tread;
+    for (let ty = -carH*0.3 - tread + toff2; ty < carH*0.34; ty += tread){
+      cx.fillRect(wx2 - carW*0.13, ty, carW*0.26, tread*0.32);
     }
     cx.restore();
+    cx.strokeStyle = '#111114'; cx.lineWidth = 2;
+    rrp(wx2 - carW*0.13, -carH*0.28, carW*0.26, carH*0.58, carH*0.1); cx.stroke();
   }
-  const bgrad = cx.createLinearGradient(0, -carH*0.5, 0, carH*0.35);
-  bgrad.addColorStop(0, '#FF63B8'); bgrad.addColorStop(0.55, '#F0149C'); bgrad.addColorStop(1, '#B80D77');
-  cx.fillStyle = bgrad;
-  rrp(-carW*0.48, -carH*0.18, carW*0.96, carH*0.52, carH*0.14);
-  cx.fill();
-  cx.strokeStyle = '#111114'; cx.lineWidth = 3; cx.stroke();
-  cx.fillStyle = 'rgba(17,17,20,.2)';
-  rrp(-carW*0.46, carH*0.2, carW*0.92, carH*0.12, carH*0.06); cx.fill();
-  cx.save();
-  cx.translate(-Math.max(-1, Math.min(1, laneDelta*3))*carW*0.05, 0);
-  const cabW = carW*0.58;
-  const cgrad = cx.createLinearGradient(0, -carH*0.56, 0, -carH*0.1);
-  cgrad.addColorStop(0, '#23232B'); cgrad.addColorStop(1, '#101014');
-  cx.fillStyle = cgrad;
-  rrp(-cabW/2, -carH*0.54, cabW, carH*0.42, carH*0.12);
-  cx.fill(); cx.strokeStyle = '#111114'; cx.lineWidth = 2.5; cx.stroke();
-  cx.fillStyle = 'rgba(251,249,242,.2)';
-  rrp(-cabW*0.38, -carH*0.5, cabW*0.76, carH*0.15, carH*0.05); cx.fill();
-  cx.fillStyle = '#111114';
-  rrp(-carW*0.44, -carH*0.68, carW*0.88, carH*0.1, carH*0.04); cx.fill();
-  cx.fillRect(-carW*0.3, -carH*0.58, carW*0.07, carH*0.1);
-  cx.fillRect(carW*0.23, -carH*0.58, carW*0.07, carH*0.1);
-  cx.restore();
+  /* narrow ink monocoque tapering to the nose */
+  const mg = cx.createLinearGradient(0, -carH*0.45, 0, carH*0.3);
+  mg.addColorStop(0, '#2E2E38'); mg.addColorStop(0.5, '#17171A'); mg.addColorStop(1, '#0C0C10');
+  cx.fillStyle = mg;
+  cx.beginPath();
+  cx.moveTo(-carW*0.3, carH*0.3);
+  cx.lineTo(carW*0.3, carH*0.3);
+  cx.lineTo(carW*0.2, -carH*0.3);
+  cx.lineTo(-carW*0.2, -carH*0.3);
+  cx.closePath(); cx.fill();
+  cx.strokeStyle = '#0A0A0D'; cx.lineWidth = 2.5; cx.stroke();
+  /* engine cover slash: the only marking */
   cx.strokeStyle = '#FBF9F2'; cx.lineWidth = Math.max(4, carW*0.05); cx.lineCap = 'round';
-  cx.beginPath(); cx.moveTo(carW*0.08, -carH*0.1); cx.lineTo(-carW*0.08, carH*0.24); cx.stroke();
-  cx.fillStyle = '#FBF9F2';
-  rrp(-carW*0.44, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
-  rrp(carW*0.30, carH*0.02, carW*0.14, carH*0.1, carH*0.04); cx.fill();
+  cx.beginPath(); cx.moveTo(carW*0.07, -carH*0.16); cx.lineTo(-carW*0.07, carH*0.18); cx.stroke();
+  /* cockpit halo + headrest, shifts with steer for yaw */
+  cx.save();
+  cx.translate(-sv*carW*0.045, 0);
+  cx.fillStyle = '#0C0C10';
+  rrp(-carW*0.12, -carH*0.52, carW*0.24, carH*0.26, carH*0.09); cx.fill();
+  cx.strokeStyle = '#3A3A44'; cx.lineWidth = Math.max(3, carW*0.028);
+  cx.beginPath(); cx.arc(0, -carH*0.4, carW*0.15, Math.PI*1.05, Math.PI*1.95); cx.stroke();
+  cx.restore();
+  /* high rear wing on struts */
+  cx.fillStyle = '#111114';
+  cx.fillRect(-carW*0.09, -carH*0.62, carW*0.05, carH*0.2);
+  cx.fillRect(carW*0.04, -carH*0.62, carW*0.05, carH*0.2);
+  const wg = cx.createLinearGradient(0, -carH*0.78, 0, -carH*0.6);
+  wg.addColorStop(0, '#2E2E38'); wg.addColorStop(1, '#111114');
+  cx.fillStyle = wg;
+  rrp(-carW*0.5, -carH*0.8, carW, carH*0.16, carH*0.05); cx.fill();
+  cx.strokeStyle = '#0A0A0D'; cx.lineWidth = 2; cx.stroke();
+  /* winglet endplates */
+  cx.fillStyle = '#17171A';
+  cx.fillRect(-carW*0.52, -carH*0.86, carW*0.05, carH*0.26);
+  cx.fillRect(carW*0.47, -carH*0.86, carW*0.05, carH*0.26);
+  /* tail light strip: glows while boosting */
+  cx.fillStyle = DR.boosting ? '#F0149C' : 'rgba(251,249,242,.85)';
+  rrp(-carW*0.26, carH*0.2, carW*0.52, carH*0.07, carH*0.03); cx.fill();
   cx.restore();
   /* wordless steering prompt until first input */
   if (!DR.moved && !DR.dead){
