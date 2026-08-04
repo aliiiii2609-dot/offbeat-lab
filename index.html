@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#F2EFE6">
 <title>OFF/BEAT · the arcade</title>
-<meta name="description" content="three games. one bold studio. run, judge pitches, sit in the CEO ki kursi. fan made, gloriously unofficial.">
+<meta name="description" content="three games and a brand lab. build a whole consumer brand in 60 seconds, run from your 9-5, judge pitches, sit in the CEO ki kursi. fan made, gloriously unofficial.">
 <meta property="og:title" content="OFF/BEAT · the arcade">
-<meta property="og:description" content="some grow older. some grow bolder. some built an arcade. 🏃🦈😎">
+<meta property="og:description" content="some grow older. some grow bolder. some built a brand in 60 seconds. 🧪🏃🦈😎">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2214%22 fill=%22%23F0149C%22/><path d=%22M62 12 L38 88%22 stroke=%22%23111114%22 stroke-width=%2214%22 stroke-linecap=%22round%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +78,13 @@
   #homebtn:active{transform:translate(2px,2px); box-shadow:0 0 0}
 
   #modebtns{display:flex; gap:16px; flex-wrap:wrap; justify-content:center}
-  #startbtn,#sharkbtn,#simbtn,#cbbtn{font-family:var(--disp); font-size:clamp(15px,2.4vw,21px); cursor:pointer;
+  #labsbtn{color:#FBF9F2; background:var(--ink); box-shadow:6px 6px 0 var(--pink); line-height:1.3;
+    outline:3px solid var(--pink); outline-offset:-3px}
+  #labsbtn small{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.06em;
+    color:rgba(251,249,242,.7); margin-top:5px; text-transform:lowercase}
+  #labsbtn:hover{transform:translate(-2px,-2px)}
+  #labsbtn:active{transform:translate(3px,3px)}
+  #startbtn,#sharkbtn,#simbtn,#cbbtn,#labsbtn{font-family:var(--disp); font-size:clamp(15px,2.4vw,21px); cursor:pointer;
     border:none; padding:18px 34px; letter-spacing:.02em;
     transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
   #cbbtn:hover{transform:translate(-2px,-2px)}
@@ -279,6 +285,49 @@
     text-shadow:2px 2px 0 rgba(240,20,156,.4)}
   #toast.show{opacity:1; transform:translateX(-50%) scale(1)}
 
+  /* ===== OFF/BEAT LABS ===== */
+  #labs{position:fixed; inset:0; z-index:14; background:var(--bg); overflow-y:auto;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    padding:max(104px,calc(env(safe-area-inset-top) + 96px)) 14px calc(22px + env(safe-area-inset-bottom))}
+  #labtop{width:min(560px,100%); display:flex; flex-direction:column; align-items:center; gap:9px}
+  #labhead{display:flex; align-items:center; gap:10px}
+  #lablogo{font-family:var(--disp); font-size:clamp(14px,3.2vw,20px)}
+  #labpix{width:38px; height:38px; image-rendering:pixelated; border:2px solid var(--ink); background:var(--panel)}
+  #labclock{width:100%; height:9px; border:2px solid var(--ink); overflow:hidden}
+  #labclockfill{height:100%; width:100%; background:var(--pink)}
+  #labclock.panic #labclockfill{background:var(--ink); animation:blink .3s steps(1) infinite}
+  #labmeters{display:flex; gap:7px; flex-wrap:wrap; justify-content:center}
+  #labmeters .pill b{font-variant-numeric:tabular-nums}
+  #labbrief{width:min(560px,100%); background:var(--panel); border:2px solid var(--ink);
+    box-shadow:8px 8px 0 var(--pink); padding:clamp(15px,3vw,22px); text-align:left}
+  #labstep{font-family:var(--pxf); font-size:9px; color:var(--pink); letter-spacing:.04em}
+  #labwho{font-family:var(--mono); font-size:11.5px; color:var(--dim); letter-spacing:.1em;
+    text-transform:uppercase; margin-top:11px}
+  #labq{font-family:var(--disp); font-size:clamp(18px,3.5vw,26px); line-height:1.14; margin-top:5px}
+  #labbrand{margin-top:11px; padding-top:10px; border-top:1px solid var(--faint);
+    font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.06em}
+  #labbrand b{font-family:var(--disp); color:var(--ink); font-size:14px; letter-spacing:0}
+  #labopts{width:min(560px,100%); display:flex; flex-direction:column; gap:9px}
+  #labopts button{font-family:var(--body); font-weight:700; font-size:15px; text-align:left;
+    padding:13px 15px; border:2px solid var(--ink); background:var(--panel); color:var(--ink);
+    cursor:pointer; box-shadow:4px 4px 0 rgba(17,17,20,.15); transition:transform .12s, box-shadow .12s}
+  #labopts button:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--pink)}
+  #labopts button:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--pink)}
+  #labopts button:focus-visible{outline:3px solid var(--pink); outline-offset:2px}
+  #labopts button small{display:block; font-weight:400; font-family:var(--mono); font-size:11.5px;
+    color:var(--dim); margin-top:5px; line-height:1.45}
+  #labopts button .num{font-family:var(--pxf); font-size:8px; color:var(--pink); margin-right:8px}
+  #labreroll{font-family:var(--mono); font-weight:700; font-size:12px; padding:9px 14px; cursor:pointer;
+    border:2px dashed var(--ink); background:transparent; color:var(--ink)}
+  #labreroll:active{transform:translate(2px,2px)}
+  #labreact{font-family:var(--mono); font-size:12.5px; min-height:17px; text-align:center; color:var(--ink)}
+  #labreact.pop{animation:reactpop .3s cubic-bezier(.34,1.8,.64,1)}
+  @keyframes reactpop{from{transform:scale(.86); opacity:0}to{transform:scale(1); opacity:1}}
+  #lcardwrap{position:relative; display:inline-block; margin:6px auto 2px}
+  #lcard{display:block; width:min(74vw,300px); height:auto; border:2px solid var(--ink);
+    box-shadow:8px 8px 0 var(--pink)}
+  #labover .card{max-width:min(94vw,470px)}
+
   /* ===== CARDS ===== */
   .panelbg{position:fixed; inset:0; z-index:20; display:grid; place-items:center;
     background:rgba(242,239,230,.85); backdrop-filter:blur(10px); padding:16px}
@@ -362,7 +411,9 @@
     #intro .inner{gap:13px}
     #howto{font-size:11px}
     #modebtns{flex-direction:column; width:min(78vw,300px); gap:12px}
-    #startbtn,#sharkbtn,#simbtn{padding:15px 18px; font-size:14px; width:100%}
+    #startbtn,#sharkbtn,#simbtn,#labsbtn,#cbbtn{padding:15px 18px; font-size:14px; width:100%}
+    #labopts button{font-size:14px}
+    #lcard{width:min(80vw,290px)}
     #sbtns button{padding:18px 6px}
     #sdesc{padding:0 16px; min-height:64px}
     #stitle{padding:0 12px}
@@ -413,9 +464,10 @@
       <button class="pol" data-p="cake" data-c="the cake"><img id="w3" alt="the cake"><div class="pc">THE CAKE</div></button>
       <button class="pol" data-p="kurta" data-c="the drip"><img id="w4" alt="the drip"><div class="pc">THE DRIP</div></button>
     </div>
-    <div id="introline">three games. one bold studio. <em>full send.</em></div>
+    <div id="introline">three games. one brand lab. <em>full send.</em></div>
     <div id="modebtns">
       <button id="cbbtn" class="hidden">🏁 THE COMEBACK<small>the closer to failure, the faster you go</small></button>
+      <button id="labsbtn">🧪 THE LAB<small>build a whole brand in 60 seconds</small></button>
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
       <button id="simbtn">😎 CEO KI KURSI</button>
@@ -462,6 +514,48 @@
   <div id="sbtns">
     <button id="inbtn">🤝 I'M IN</button>
     <button id="outbtn">🚪 I'M OUT</button>
+  </div>
+</div>
+
+<!-- OFF/BEAT LABS -->
+<div id="labs" class="hidden">
+  <div id="labtop">
+    <div id="labhead">
+      <canvas id="labpix" width="224" height="224" aria-label="pixel aman running the lab"></canvas>
+      <div id="lablogo" class="tag">THE<span class="slash">/</span>LAB</div>
+    </div>
+    <div id="labclock" aria-hidden="true"><div id="labclockfill"></div></div>
+    <div id="labmeters">
+      <span class="pill">🔥 bold <b id="labB">40</b></span>
+      <span class="pill">🎨 taste <b id="labT">40</b></span>
+      <span class="pill">💸 CAC ₹<b id="labC">120</b></span>
+    </div>
+  </div>
+  <div id="labbrief">
+    <div id="labstep">BRIEF 1 / 6</div>
+    <div id="labwho">the brief</div>
+    <div id="labq"></div>
+    <div id="labbrand" class="hidden"></div>
+  </div>
+  <div id="labopts"></div>
+  <button id="labreroll" class="hidden">🎲 reroll names (3 left)</button>
+  <div id="labreact"></div>
+</div>
+
+<!-- LAB OVER -->
+<div class="panelbg hidden" id="labover">
+  <div class="card">
+    <h2>THE<span class="slash">/</span>PACK</h2>
+    <div class="rank" id="labrank"></div>
+    <div id="lcardwrap"><canvas id="lcard" width="1080" height="1350" aria-label="your launch card"></canvas></div>
+    <p id="labverdict"></p>
+    <div class="row">
+      <button class="primary" id="labdl">⬇ save the pack</button>
+      <button class="gold" id="labagain">new brief</button>
+      <button id="labshare">share</button>
+      <button id="labpitchbtn">one more thing…</button>
+      <button id="labmenu">menu</button>
+    </div>
   </div>
 </div>
 
@@ -1413,7 +1507,9 @@ function toHome(){
   closeDlg();
   SIM.on = false;
   if (typeof CB !== 'undefined') cbStop();
-  ['over','sover','pitch','shark','sim','simover','wasted','rlives','raise','homebtn'].forEach(id => $(id).classList.add('hidden'));
+  if (typeof LAB !== 'undefined') labStop();
+  ['over','sover','pitch','shark','sim','simover','wasted','rlives','raise','homebtn','labs','labover']
+    .forEach(id => $(id).classList.add('hidden'));
   $('hudtop').classList.remove('hidden');
   $('intro').classList.remove('hidden');
 }
@@ -2380,6 +2476,532 @@ function cbDraw(){
   }
   cx.globalAlpha = 1;
 }
+/* ================= OFF/BEAT LABS ================= */
+/* the marketing game. six briefs, sixty seconds, one brand.
+   you leave with an actual artifact: a launch pack you can download and post.
+   taste and audacity pull against what it costs to be heard (CAC). */
+
+const LAB_CATS = [
+  {word:'ENERGY STICK', sil:'stick', pal:['#FF4D2E','#FFD166'],
+   opt:'an energy stick you rip open. no water, no shaker, 3 seconds.',
+   note:'india already trusts sachets. we just make one worth flexing.', B:10, T:2, C:-16},
+  {word:'DESSERT IN A CAN', sil:'can', pal:['#7B5CFF','#FFC2E8'],
+   opt:'dessert in a can. cold shelf, kulfi energy, drink it on the metro.',
+   note:'nobody owns cold dessert. the freezer is a moat though.', B:14, T:10, C:14},
+  {word:'PROTEIN CHAI', sil:'pouch', pal:['#C96A2B','#F0DFBE'],
+   opt:'protein chai. 30g, tastes like ghar, not like a gym.',
+   note:'every uncle drinks 4 chais a day. sneak the protein in.', B:4, T:14, C:-6},
+  {word:'GUT SHOT', sil:'bottle', pal:['#1FA363','#DCF7C8'],
+   opt:'a 60ml gut shot. one gulp, tastes like kachcha aam.',
+   note:'wellness margin, impulse price, repeat purchase built in.', B:6, T:12, C:8},
+  {word:'BOYS SKINCARE', sil:'tube', pal:['#2E6BFF','#D6E4FF'],
+   opt:'skincare for boys who own exactly one bottle of anything.',
+   note:'no mirrors in the ads. just SPF and zero shame.', B:12, T:8, C:16},
+  {word:'AIR FRIED NAMKEEN', sil:'bag', pal:['#F0149C','#FFE3A3'],
+   opt:'namkeen, air fried, 12g protein, still tastes like a party.',
+   note:'chips ka rebrand. the shelf is crowded but the taste isnt.', B:6, T:6, C:-12},
+];
+
+const NM_A = ['BOLD','LOUD','CHOTA','BADA','DESI','RAW','ZERO','NEON','MASTI','SHAKTI','GOOD','WILD','ULTRA','HAAN','KADAK','FULL'];
+const NM_B = ['BOI','BUNK','CLUB','GANG','DROP','FIZZ','JOLT','JELLY','GHEE','RIOT','LAB','WALA','SIP','SNAP','TADKA','HOUR'];
+const NM_SOLO = ['MAKKHAN','JHAKAAS','GULLY','CHAAP','BOLDER','NOKJHOK','SHURU','ADDA','JUGAAD','PATAKA','THELA','BINDAAS'];
+const NM_NOTE_SOLO = ['one word. trademark lawyer will cry, shelf will not.',
+  'says nothing, means everything. classic taste play.',
+  'people will say it wrong for a month, then correctly forever.'];
+const NM_NOTE_DUO = ['two words, one breath. instagram handle probably free.',
+  'loud on the pack, louder in a group chat.',
+  'reads like a dare. that is the point.'];
+
+const LAB_LINES = [
+  {t:'ek sachet. poora din.', v:'taste'},
+  {t:'thanda matlab bold.', v:'bold'},
+  {t:'protein, but make it ghar.', v:'taste'},
+  {t:'chhoti bottle. badi harkat.', v:'bold'},
+  {t:'aap so jao. hum kaam karenge.', v:'cursed'},
+  {t:'shelf pe sabse zyada shor.', v:'bold'},
+  {t:'kam sugar. zyada attitude.', v:'taste'},
+  {t:'kisi se pucha nahi. bana diya.', v:'bold'},
+  {t:'boring logon ke liye nahi hai.', v:'bold'},
+  {t:'taste pehle. gyaan baad mein.', v:'taste'},
+  {t:'the pack is the ad.', v:'taste'},
+  {t:'aapke papa isse approve nahi karenge.', v:'cursed'},
+];
+const LINE_FX = {
+  taste:{B:-5, T:18, C:-2, note:'quiet confidence. ages well, sells slower on day one.'},
+  bold:{B:18, T:-5, C:-10, note:'a line people repeat for free. that is media you did not buy.'},
+  cursed:{B:22, T:-9, C:-18, note:'unhinged. either a cult or a screenshot. both work.'},
+};
+
+const LAB_PACKS = [
+  {tag:'LOUD AF', att:'loud', label:'LOUD AF: three colours, giant type, readable from the metro',
+   note:'wins the shelf, loses the design award. we do not enter those.', B:17, T:-8, C:-10},
+  {tag:'QUIET FLEX', att:'quiet', label:'QUIET FLEX: one colour, one word, a lot of empty space',
+   note:'premium as hell. needs the creator army to explain it.', B:-8, T:19, C:8},
+  {tag:'CURSED MASCOT', att:'cursed', label:'CURSED MASCOT: a little guy with dead eyes on every pack',
+   note:'people will post it just to ask what is wrong with it.', B:20, T:-4, C:-16},
+];
+
+const LAB_GTM = [
+  {tag:'Q-COMM BLITZ', label:'10 minute shelf blitz: blinkit, zepto, instamart, day one',
+   note:'instant scale, instant discounting. the shelf fee is the tax.', B:6, T:-2, C:20},
+  {tag:'300 CREATORS', label:'300 nano creators, no scripts, no filters, no brand deck',
+   note:'messy, real, cheap. brand safety team does not exist yet.', B:8, T:8, C:-6},
+  {tag:'ONE STUNT', label:'one giant stunt, zero media spend, pray for screenshots',
+   note:'the highest ceiling and the lowest floor in marketing.', B:20, T:-8, C:-24},
+];
+
+const LAB_STUNTS = [
+  {tag:'7 BLANK DAYS', label:'a billboard that says nothing for 7 days, then the pack appears',
+   note:'the whole city becomes the teaser. costs one hoarding.', B:15, T:12, C:-14},
+  {tag:'2AM THELA', label:'sell it only after 2am, only from a thela, only in one city',
+   note:'scarcity plus street. resellers do the marketing.', B:18, T:6, C:-18},
+  {tag:'CEO PUPPET', label:'put the founder in the ad as a hand puppet. no explanation given',
+   note:'either legendary or a board meeting. probably both.', B:23, T:-10, C:-20},
+  {tag:'GULLY LEAGUE', label:'sponsor a gully cricket league. the trophy is a giant pack',
+   note:'every match is a shoot. every kid is a billboard.', B:10, T:13, C:-10},
+  {tag:'PACK UNLOCKS A SONG', label:'the pack unlocks a song. the song charts. the song sells packs',
+   note:'audio was your first business. use it.', B:14, T:16, C:-8},
+  {tag:'PRONOUNCE IT FREE', label:'free pack to anyone who can pronounce the name on camera',
+   note:'turns a naming problem into a content engine.', B:13, T:2, C:-16},
+  {tag:'TIRED PEOPLE', label:'ship 1000 packs to people who posted that they are tired',
+   note:'1000 packs, 1000 posts, zero media plan.', B:11, T:14, C:-14},
+  {tag:'METRO POLES', label:'metro pole wraps that spell the name only when the train moves',
+   note:'nobody can screenshot it. everybody films it.', B:12, T:16, C:-6},
+];
+
+const LAB_REACT = {
+  bold:['bhai isme dum hai. full send. 🔥','ye toh audacity hai. rakh lo.','bold. mummy ko mat batao.'],
+  taste:['taste ekdum makkhan. shelf pe chamkega. 🧈','ye premium lag raha hai. price badhao.','clean. genZ hi ho aap toh.'],
+  cheap:['CAC gir gaya. CFO muskura raha hai. 💸','free distribution? ye asli marketing hai.','paisa bacha, shor badha. perfect.'],
+  costly:['mehenga hai boss. but shelf toh milega.','CAC dekh ke CFO paani pee raha hai. 🫠','burn hoga. bold bhi hoga. chalo.'],
+};
+const LAB_RANKS = [
+  [32,'SHELF FILLER','ye pack shelf pe hai. bas hai. koi utha nahi raha.'],
+  [48,'REGIONAL RIOT','ek sheher pagal ho gaya. baaki india ko pata nahi.'],
+  [63,'NATIONAL NOISE','distribution mil gaya, dil nahi mila. abhi bhi bada hai.'],
+  [76,'CULT DROP','log stock out hone pe gaali denge. best problem hai.'],
+  [999,'CATEGORY CREATOR','aapne category bana di. ab baaki log aapko copy karenge. 🫡'],
+];
+
+const LAB = {on:false, i:0, t:60, timer:null, B:40, T:40, C:120, rerolls:3,
+  brand:{}, cats:[], names:[], lines:[], stunts:[], attempt:1, rush:false, score:0, rank:'', signups:0};
+
+function labPick3(arr){
+  const pool = arr.slice(), out = [];
+  while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+  return out;
+}
+function labGenNames(){
+  const out = [], seen = new Set();
+  while (out.length < 3){
+    let n, note;
+    if (Math.random() < 0.4){
+      n = NM_SOLO[Math.floor(Math.random()*NM_SOLO.length)];
+      note = NM_NOTE_SOLO[out.length % 3];
+    } else {
+      n = NM_A[Math.floor(Math.random()*NM_A.length)] + ' ' + NM_B[Math.floor(Math.random()*NM_B.length)];
+      note = NM_NOTE_DUO[out.length % 3];
+    }
+    if (seen.has(n)) continue;
+    seen.add(n);
+    const solo = !n.includes(' ');
+    out.push({name:n, note:note, B: solo ? 4 : 12, T: solo ? 14 : 5, C: solo ? 4 : -4});
+  }
+  return out;
+}
+function labLines3(){
+  const picks = [];
+  for (const v of ['bold','taste','cursed']){
+    const pool = LAB_LINES.filter(l => l.v === v);
+    picks.push(pool[Math.floor(Math.random()*pool.length)]);
+  }
+  return picks.sort(() => Math.random() - 0.5);
+}
+
+function labStart(){
+  LAB.on = true; LAB.i = 0; LAB.t = 60; LAB.B = 40; LAB.T = 40; LAB.C = 120;
+  LAB.rerolls = 3; LAB.rush = false; LAB.brand = {};
+  LAB.cats = labPick3(LAB_CATS);
+  LAB.names = labGenNames();
+  LAB.lines = labLines3();
+  LAB.stunts = labPick3(LAB_STUNTS);
+  LAB.attempt = (+localStorage.getItem('ob_lab_att') || 0) + 1;
+  try{ localStorage.setItem('ob_lab_att', LAB.attempt); }catch(e){}
+  $('intro').classList.add('hidden');
+  $('hudtop').classList.add('hidden');
+  $('labover').classList.add('hidden');
+  $('labs').classList.remove('hidden');
+  $('homebtn').classList.remove('hidden');
+  $('labreact').textContent = 'six briefs. sixty seconds. koi research nahi.';
+  labMeters(); labRender();
+  clearInterval(LAB.timer);
+  LAB.timer = setInterval(labTick, 100);
+}
+function labStop(){
+  LAB.on = false; clearInterval(LAB.timer);
+}
+function labTick(){
+  if (!LAB.on) return;
+  LAB.t = Math.max(0, LAB.t - 0.1);
+  $('labclockfill').style.width = (LAB.t/60*100) + '%';
+  $('labclock').classList.toggle('panic', LAB.t < 12 && LAB.t > 0);
+  if (LAB.t <= 0){
+    clearInterval(LAB.timer);
+    LAB.rush = true;
+    toast('intern ne ship kar diya 😭');
+    while (LAB.i < 6){
+      const b = labBrief(LAB.i);
+      labApply(b.opts[Math.floor(Math.random()*b.opts.length)]);
+      LAB.i++;
+    }
+    labFinish();
+  }
+}
+function labMeters(){
+  $('labB').textContent = Math.round(LAB.B);
+  $('labT').textContent = Math.round(LAB.T);
+  $('labC').textContent = Math.round(LAB.C);
+}
+function labBrief(i){
+  if (i === 0) return {who:'aman, 11:40pm', q:'we launch in 6 weeks. pick the shelf.',
+    opts: LAB.cats.map(c => ({label:c.opt, note:c.note, B:c.B, T:c.T, C:c.C,
+      take:() => { LAB.brand.cat = c; }}))};
+  if (i === 1) return {who:'the naming doc', q:'name it. no focus group, no lawyer, just taste.', reroll:true,
+    opts: LAB.names.map(n => ({label:n.name, note:n.note, B:n.B, T:n.T, C:n.C,
+      take:() => { LAB.brand.name = n.name; }}))};
+  if (i === 2) return {who:'the one line', q:'what does the pack say before anyone picks it up?',
+    opts: LAB.lines.map(l => ({label:'"' + l.t + '"', note:LINE_FX[l.v].note,
+      B:LINE_FX[l.v].B, T:LINE_FX[l.v].T, C:LINE_FX[l.v].C,
+      take:() => { LAB.brand.line = l.t; }}))};
+  if (i === 3) return {who:'design review', q:'how does it look on a shelf with 40 other packs?',
+    opts: LAB_PACKS.map(p => ({label:p.label, note:p.note, B:p.B, T:p.T, C:p.C,
+      take:() => { LAB.brand.pack = p; }}))};
+  if (i === 4) return {who:'go to market', q:'how do the first 1,00,000 people hear about it?',
+    opts: LAB_GTM.map(gm => ({label:gm.label, note:gm.note, B:gm.B, T:gm.T, C:gm.C,
+      take:() => { LAB.brand.gtm = gm; }}))};
+  return {who:'the launch stunt', q:'one bold thing. this is the part people remember.',
+    opts: LAB.stunts.map(s => ({label:s.label, note:s.note, B:s.B, T:s.T, C:s.C,
+      take:() => { LAB.brand.stunt = s; }}))};
+}
+function labApply(o){
+  LAB.B = Math.max(0, Math.min(100, LAB.B + o.B));
+  LAB.T = Math.max(0, Math.min(100, LAB.T + o.T));
+  LAB.C = Math.max(30, Math.min(220, LAB.C + o.C));
+  if (o.take) o.take();
+}
+function labRender(){
+  const b = labBrief(LAB.i);
+  $('labstep').textContent = 'BRIEF ' + (LAB.i+1) + ' / 6';
+  $('labwho').textContent = b.who;
+  $('labq').textContent = b.q;
+  const bn = $('labbrand');
+  if (LAB.brand.name){
+    bn.classList.remove('hidden');
+    bn.innerHTML = 'ON THE PACK: <b>' + LAB.brand.name + '</b>' +
+      (LAB.brand.cat ? ' · ' + LAB.brand.cat.word : '') +
+      (LAB.brand.line ? '<br>"' + LAB.brand.line + '"' : '');
+  } else bn.classList.add('hidden');
+  const wrap = $('labopts');
+  wrap.innerHTML = '';
+  b.opts.forEach((o, n) => {
+    const el = document.createElement('button');
+    el.innerHTML = '<span class="num">' + (n+1) + '</span>' + o.label.replace(/&/g,'&amp;').replace(/</g,'&lt;') +
+      '<small>' + o.note + '</small>';
+    el.addEventListener('click', () => labChoose(o));
+    wrap.appendChild(el);
+  });
+  const rr = $('labreroll');
+  if (b.reroll && LAB.rerolls > 0){
+    rr.classList.remove('hidden');
+    rr.textContent = '🎲 reroll names (' + LAB.rerolls + ' left)';
+  } else rr.classList.add('hidden');
+}
+function labChoose(o){
+  if (!LAB.on) return;
+  sfx.pop(520 + LAB.i*70);
+  labApply(o);
+  const big = Math.abs(o.B) >= Math.abs(o.T) ? 'B' : 'T';
+  let key = big === 'B' ? 'bold' : 'taste';
+  if (o.C <= -12) key = 'cheap';
+  else if (o.C >= 12) key = 'costly';
+  const bank = LAB_REACT[key];
+  const react = $('labreact');
+  react.textContent = bank[Math.floor(Math.random()*bank.length)];
+  react.classList.remove('pop'); void react.offsetWidth; react.classList.add('pop');
+  labMeters();
+  LAB.i++;
+  if (LAB.i >= 6){ labFinish(); return; }
+  labRender();
+}
+$('labreroll').addEventListener('click', () => {
+  if (LAB.rerolls <= 0) return;
+  LAB.rerolls--;
+  sfx.ui();
+  LAB.names = labGenNames();
+  labRender();
+});
+addEventListener('keydown', e => {
+  if (!LAB.on || $('labs').classList.contains('hidden')) return;
+  const n = ({Digit1:0, Digit2:1, Digit3:2})[e.code];
+  if (n === undefined) return;
+  const btns = $('labopts').children;
+  if (btns[n]) btns[n].click();
+});
+
+function labFinish(){
+  labStop();
+  const used = Math.max(1, Math.round(60 - LAB.t));
+  const mom = Math.max(0, LAB.t);
+  LAB.used = used;
+  const cacTerm = LAB.C > 70 ? -(LAB.C - 70)*0.32 : (70 - LAB.C)*0.18;
+  LAB.score = Math.max(0, Math.min(100, Math.round(
+    (LAB.B + LAB.T)*0.42 - Math.abs(LAB.B - LAB.T)*0.14 + mom*0.2 + cacTerm)));
+  LAB.signups = Math.round((LAB.B*95 + LAB.T*80) * (1 + mom/140) * (75/Math.max(35, LAB.C)));
+  const r = LAB_RANKS.find(x => LAB.score <= x[0]);
+  LAB.rank = r[1];
+  $('labrank').textContent = r[1];
+  $('labverdict').textContent = (LAB.rush ? 'time khatam ho gaya, intern ne baaki decide kiya. ' : '') + r[2];
+  $('labs').classList.add('hidden');
+  $('labover').classList.remove('hidden');
+  sfx.ding();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(labDrawCard);
+  else labDrawCard();
+  labDrawCard();
+}
+
+/* ---- the pack art: pixel art at 132x168, blown up with smoothing off ---- */
+function labPackArt(){
+  const off = document.createElement('canvas');
+  off.width = 132; off.height = 168;
+  const g = off.getContext('2d');
+  const cat = LAB.brand.cat, pack = LAB.brand.pack;
+  const c1 = cat.pal[0], c2 = cat.pal[1], ink = '#111114';
+  /* every silhouette is a stack of blocks: [name, x,y,w,h, colour] */
+  const parts = {
+    stick:  [['body',46,20,40,132,'c1'], ['lid',46,20,40,13,'c2'], ['tear',44,36,44,3,'ink']],
+    can:    [['body',40,26,52,126,'c1'], ['lid',40,26,52,12,'c2'], ['tab',62,29,11,5,'ink'],
+             ['rim',40,144,52,8,'c2']],
+    pouch:  [['crimp',30,22,72,11,'c2'], ['body',36,33,60,116,'c1'], ['spout',84,12,14,12,'c2'],
+             ['foot',30,149,72,9,'c2']],
+    bottle: [['cap',54,8,26,12,'c2'], ['neck',58,20,18,14,'c2'], ['body',42,34,48,118,'c1'],
+             ['shoulder',46,34,40,6,'c2']],
+    tube:   [['shoulder',52,16,28,8,'c2'], ['body',46,24,40,120,'c1'], ['cap',52,144,28,14,'c2']],
+    bag:    [['body',32,32,68,114,'c1'], ['crimp',38,22,56,11,'c2'], ['foot',40,146,52,8,'c2']],
+  }[cat.sil];
+  const col = {c1:c1, c2:c2, ink:ink};
+  /* pink on a pink pack is invisible, so the accent flips to ink there */
+  const acc = c1.toUpperCase() === '#F0149C' ? ink : '#F0149C';
+  /* ink outline: every block gets a 3px shell */
+  g.fillStyle = ink;
+  for (const p of parts) g.fillRect(p[1]-3, p[2]-3, p[3]+6, p[4]+6);
+  for (const p of parts){ g.fillStyle = col[p[5]]; g.fillRect(p[1], p[2], p[3], p[4]); }
+  const bp = parts.find(p => p[0] === 'body');
+  const b = [bp[1], bp[2], bp[3], bp[4]];
+  g.save();
+  g.beginPath(); g.rect(b[0], b[1], b[2], b[3]); g.clip();
+  if (pack.att === 'loud'){
+    g.fillStyle = acc;
+    for (let i = 0; i < 3; i++){
+      g.save();
+      g.translate(b[0] - 10, b[1] + 46 + i*30);
+      g.rotate(-0.34);
+      g.fillRect(0, 0, b[2] + 40, 9);
+      g.restore();
+    }
+    g.fillStyle = c2;
+    g.fillRect(b[0], b[1] + b[3] - 22, b[2], 7);
+  } else if (pack.att === 'quiet'){
+    g.fillStyle = c2;
+    g.fillRect(b[0], b[1] + b[3] - 46, b[2], 20);
+    g.fillStyle = ink;
+    g.fillRect(b[0] + 8, b[1] + b[3] - 20, b[2] - 16, 3);
+  } else {
+    /* the cursed little guy */
+    const ey = b[1] + 62, ex = b[0] + b[2]/2;
+    g.fillStyle = '#FBF9F2';
+    g.fillRect(ex - 17, ey, 12, 14); g.fillRect(ex + 5, ey, 12, 14);
+    g.fillStyle = ink;
+    g.fillRect(ex - 14, ey + 6, 5, 5); g.fillRect(ex + 8, ey + 6, 5, 5);
+    g.fillRect(ex - 10, ey + 26, 20, 3);
+    g.fillStyle = acc;
+    g.globalAlpha = .55;
+    g.fillRect(ex - 24, ey + 16, 8, 5); g.fillRect(ex + 16, ey + 16, 8, 5);
+    g.globalAlpha = 1;
+  }
+  /* the studio mark: pink block with a cream slash, plus fake type lines */
+  const mx = b[0] + b[2]/2 - 14, my = b[1] + 12;
+  g.fillStyle = acc; g.fillRect(mx, my, 28, 13);
+  g.strokeStyle = '#FBF9F2'; g.lineWidth = 3; g.lineCap = 'butt';
+  g.beginPath(); g.moveTo(mx + 18, my + 2); g.lineTo(mx + 10, my + 11); g.stroke();
+  g.fillStyle = ink;
+  g.fillRect(b[0] + 10, b[1] + b[3] - 14, b[2] - 20, 3);
+  g.fillRect(b[0] + 10, b[1] + b[3] - 8, (b[2] - 20)*0.55, 3);
+  g.restore();
+  return off;
+}
+
+function labNotch(g, x, y, w, h){
+  const nx = w*0.028;
+  g.beginPath();
+  g.moveTo(x, y + h*0.14); g.lineTo(x + nx, y + h*0.14); g.lineTo(x + nx, y);
+  g.lineTo(x + w - nx, y); g.lineTo(x + w - nx, y + h*0.10); g.lineTo(x + w, y + h*0.10);
+  g.lineTo(x + w, y + h*0.86); g.lineTo(x + w - nx, y + h*0.86); g.lineTo(x + w - nx, y + h);
+  g.lineTo(x + w*0.04, y + h); g.lineTo(x + w*0.04, y + h*0.90); g.lineTo(x, y + h*0.90);
+  g.closePath();
+}
+function labFit(g, text, max, px, fam){
+  let s = px;
+  for (;;){
+    g.font = '400 ' + s + 'px ' + fam;
+    if (g.measureText(text).width <= max || s <= 16) break;
+    s -= 2;
+  }
+  return s;
+}
+function labWrap(g, text, max, lines){
+  const words = text.split(' '), out = [];
+  let cur = '';
+  for (const w of words){
+    const t = cur ? cur + ' ' + w : w;
+    if (g.measureText(t).width > max && cur){ out.push(cur); cur = w; if (out.length === lines) return out; }
+    else cur = t;
+  }
+  if (cur && out.length < lines) out.push(cur);
+  return out;
+}
+function labDrawCard(){
+  const cvs = $('lcard'), g = cvs.getContext('2d');
+  const W = 1080, H = 1350, INK = '#111114', PINK = '#F0149C', CREAM = '#FBF9F2';
+  const br = LAB.brand;
+  if (!br.cat || !br.name) return;
+  g.setTransform(1,0,0,1,0,0);
+  g.fillStyle = '#F2EFE6'; g.fillRect(0, 0, W, H);
+  /* halftone */
+  g.fillStyle = 'rgba(17,17,20,.055)';
+  for (let y = 0; y < H; y += 7)
+    for (let x = (y/7) % 2 ? 3.5 : 0; x < W; x += 7) g.fillRect(x, y, 2, 2);
+  g.strokeStyle = INK; g.lineWidth = 7; g.strokeRect(30, 30, W-60, H-60);
+  g.textBaseline = 'alphabetic';
+
+  /* header row */
+  g.fillStyle = 'rgba(17,17,20,.6)';
+  g.font = '400 23px "Space Mono", monospace';
+  g.textAlign = 'left';
+  g.fillText('OFF/BEAT LABS · SHELF CASE No. ' + String(LAB.attempt).padStart(3, '0'), 74, 104);
+  g.textAlign = 'right';
+  g.fillText('BUILT IN ' + LAB.used + 'S', W - 74, 104);
+
+  /* name in the notched tag */
+  const tagW = W - 148, tagH = 168, tagX = 74, tagY = 136;
+  g.fillStyle = PINK; labNotch(g, tagX, tagY, tagW, tagH); g.fill();
+  const fs = labFit(g, br.name, tagW - 80, 116, '"Archivo Black", sans-serif');
+  g.fillStyle = INK; g.textAlign = 'center';
+  g.font = '400 ' + fs + 'px "Archivo Black", sans-serif';
+  g.fillText(br.name, W/2, tagY + tagH/2 + fs*0.35);
+
+  /* category + the line */
+  g.fillStyle = 'rgba(17,17,20,.6)';
+  g.font = '400 25px "Space Mono", monospace';
+  g.fillText(br.cat.word.split('').join(' '), W/2, tagY + tagH + 54);
+  g.fillStyle = INK;
+  g.font = '400 46px "Archivo Black", sans-serif';
+  const ll = labWrap(g, '"' + br.line + '"', W - 220, 2);
+  ll.forEach((t, i) => g.fillText(t, W/2, tagY + tagH + 122 + i*56));
+
+  /* the pack */
+  const art = labPackArt(), S = 3;
+  const aw = 132*S, ah = 168*S, ax = (W - aw)/2, ay = 448;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(art, ax, ay, aw, ah);
+  g.imageSmoothingEnabled = true;
+  /* shelf */
+  const shY = ay + ah + 10;
+  g.fillStyle = PINK; g.fillRect(180, shY + 9, W - 360, 9);
+  g.fillStyle = INK; g.fillRect(170, shY, W - 340, 11);
+
+  /* the campaign spec, one line, autofit */
+  g.textAlign = 'center';
+  const spec = br.pack.tag + '  ·  ' + br.gtm.tag + '  ·  ' + br.stunt.tag;
+  const sf = labFit(g, spec, W - 180, 33, '"Archivo Black", sans-serif');
+  g.fillStyle = INK;
+  g.font = '400 ' + sf + 'px "Archivo Black", sans-serif';
+  g.fillText(spec, W/2, shY + 66);
+  g.fillStyle = 'rgba(17,17,20,.55)';
+  g.font = '400 21px "Space Mono", monospace';
+  g.fillText('BOLD ' + Math.round(LAB.B) + '  ·  TASTE ' + Math.round(LAB.T) +
+    '  ·  SHELF SCORE ' + LAB.score + '/100', W/2, shY + 104);
+
+  /* day one readout */
+  const boxes = [
+    ['DAY-1 SIGNUPS', LAB.signups.toLocaleString('en-IN')],
+    ['CAC', '₹' + Math.round(LAB.C)],
+    ['SHELF TEST', LAB.rank],
+  ];
+  const bw = (W - 148 - 24)/3, bh = 128, by = H - 258;
+  boxes.forEach(([l, v], i) => {
+    const bx = 74 + i*(bw + 12);
+    g.fillStyle = i === 2 ? INK : 'rgba(17,17,20,.05)';
+    g.fillRect(bx, by, bw, bh);
+    g.strokeStyle = INK; g.lineWidth = 3; g.strokeRect(bx, by, bw, bh);
+    g.textAlign = 'center';
+    const vf = labFit(g, v, bw - 28, 44, '"Archivo Black", sans-serif');
+    g.fillStyle = i === 2 ? PINK : INK;
+    g.font = '400 ' + vf + 'px "Archivo Black", sans-serif';
+    g.fillText(v, bx + bw/2, by + bh/2 + 8);
+    g.fillStyle = i === 2 ? 'rgba(251,249,242,.7)' : 'rgba(17,17,20,.55)';
+    g.font = '400 19px "Space Mono", monospace';
+    g.fillText(l, bx + bw/2, by + bh - 22);
+  });
+
+  /* footer */
+  g.textAlign = 'center';
+  g.fillStyle = 'rgba(17,17,20,.55)';
+  g.font = '400 21px "Space Mono", monospace';
+  g.fillText('built in the OFF/BEAT lab in ' + LAB.used + (LAB.used === 1 ? ' second' : ' seconds') +
+    ' · a fan tribute, gloriously unofficial', W/2, H - 76);
+}
+
+function labSlug(){
+  return (LAB.brand.name || 'brand').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+$('labsbtn').addEventListener('click', () => { sfx.ui(); labStart(); });
+$('labagain').addEventListener('click', () => { sfx.ui(); labStart(); });
+$('labmenu').addEventListener('click', toHome);
+$('labpitchbtn').addEventListener('click', () => {
+  $('labover').classList.add('hidden');
+  $('pitch').classList.remove('hidden');
+  typePitch();
+});
+$('labdl').addEventListener('click', () => {
+  $('lcard').toBlob(b => {
+    if (!b) return;
+    const u = URL.createObjectURL(b), a = document.createElement('a');
+    a.href = u; a.download = 'offbeat-lab-' + labSlug() + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 5000);
+  }, 'image/png');
+  toast('pack saved. ab post karo 📸');
+});
+$('labshare').addEventListener('click', async () => {
+  const text = 'built "' + LAB.brand.name + '" in the OFF/BEAT lab in ' + LAB.used +
+    (LAB.used === 1 ? ' second. ' : ' seconds. ') + LAB.rank + '. ' +
+    LAB.signups.toLocaleString('en-IN') + ' day-1 signups 🧪';
+  try{
+    const blob = await new Promise(r => $('lcard').toBlob(r, 'image/png'));
+    if (blob && navigator.canShare){
+      const file = new File([blob], 'offbeat-lab-' + labSlug() + '.png', {type:'image/png'});
+      if (navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], text:text, title:'OFF/BEAT LABS'});
+        return;
+      }
+    }
+    if (navigator.share){ await navigator.share({text:text, url:location.href}); return; }
+    await navigator.clipboard.writeText(text + ' ' + location.href);
+    toast('link copied');
+  }catch(e){}
+});
+mountGlitch($('labpix'), 2400);
+
 /* ================= GLITCH DIALOGS ================= */
 const dlg = { open:false, timers:[], onX:null };
 function showDlg(title, text, emojiSets, buttons, photo){
