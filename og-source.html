@@ -82,42 +82,31 @@ Promise.all([
   g.fillStyle = INK;
   g.font = '400 58px "Archivo Black", sans-serif';
   g.fillText('three games.', tx, 382);
-  g.fillText('one brand lab.', tx, 448);
+  g.fillText('one bold studio.', tx, 448);
   g.fillStyle = PINK;
   g.font = '400 36px "Archivo Black", sans-serif';
   g.fillText('full send.', tx, 506);
   g.fillStyle = 'rgba(17,17,20,.55)';
   g.font = '400 21px "Space Mono", monospace';
-  g.fillText('build a whole consumer brand in 60 seconds,', tx, 552);
-  g.fillText('then take the pack home', tx, 580);
+  g.fillText('some grow older. some grow bolder.', tx, 552);
+  g.fillText('some are still loading.', tx, 580);
 
-  /* the new module, flagged */
-  const nw = 300, nh = 56, nx2 = 690, ny2 = 96;
-  g.fillStyle = PINK; notch(nx2, ny2, nw, nh); g.fill();
-  g.fillStyle = INK;
-  g.font = '400 30px "Archivo Black", sans-serif';
-  g.textAlign = 'center';
-  g.fillText('NEW · THE LAB', nx2 + nw/2, ny2 + 39);
-
-  /* the shelf of packs */
-  const packs = [
-    [['#7B5CFF','#FFC2E8'], 'can', 'loud'],
-    [['#F0149C','#FFE3A3'], 'stick', 'cursed'],
-    [['#1FA363','#DCF7C8'], 'pouch', 'quiet'],
-  ];
-  const S = 1.5, pw = 132*S, ph = 168*S;
-  g.imageSmoothingEnabled = false;
-  packs.forEach((p, i) => {
-    g.drawImage(pack(p[0], p[1], p[2]), 686 + i*148, 482 - ph, pw, ph);
+  /* the three games, as shelf tags */
+  const games = ['THE RUN', 'SHARK MODE', 'CEO KI KURSI'];
+  const gw = 380, gh = 74, gx = 700;
+  games.forEach((name, i) => {
+    const gy = 152 + i*104;
+    g.fillStyle = PINK; notch(gx, gy, gw, gh); g.fill();
+    g.fillStyle = INK;
+    g.font = '400 34px "Archivo Black", sans-serif';
+    g.textAlign = 'center'; 
+    g.fillText(name, gx + gw/2, gy + 50);
   });
-  g.imageSmoothingEnabled = true;
-  g.fillStyle = PINK; g.fillRect(688, 486, 440, 9);
-  g.fillStyle = INK; g.fillRect(680, 476, 440, 11);
   g.fillStyle = 'rgba(17,17,20,.55)';
   g.font = '400 20px "Space Mono", monospace';
   g.textAlign = 'center';
-  g.fillText('your name · your line · your stunt', 900, 530);
-  g.fillText('then a pack you can actually post', 900, 562);
+  g.font = '400 18px "Space Mono", monospace';
+  g.fillText('jump the 9-5 · judge pitches · hold the kursi', gx + gw/2, 508);
   document.title = 'og-ready';
 });
 </script>

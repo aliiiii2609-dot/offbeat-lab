@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#F2EFE6">
 <title>OFF/BEAT · the arcade</title>
-<meta name="description" content="three games and a brand lab. build a whole consumer brand in 60 seconds, run from your 9-5, judge pitches, sit in the CEO ki kursi. fan made, gloriously unofficial.">
+<meta name="description" content="three games. one bold studio. run from your 9-5, judge pitches, sit in the CEO ki kursi. fan made, gloriously unofficial.">
 <meta property="og:title" content="OFF/BEAT · the arcade">
-<meta property="og:description" content="some grow older. some grow bolder. some built a brand in 60 seconds. 🧪🏃🦈😎">
+<meta property="og:description" content="some grow older. some grow bolder. some built an arcade. 🏃🦈😎">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://offbeat-lab.vercel.app/">
 <meta property="og:image" content="https://offbeat-lab.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="OFF/BEAT the arcade: three games, one brand lab, three pixel packs on a shelf">
+<meta property="og:image:alt" content="OFF/BEAT the arcade: three games, fan made and gloriously unofficial">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="OFF/BEAT · the arcade">
-<meta name="twitter:description" content="build a whole consumer brand in 60 seconds, then take the pack home. 🧪">
+<meta name="twitter:description" content="run from your 9-5, judge 18 unhinged pitches, sit in the CEO ki kursi. 🏃🦈😎">
 <meta name="twitter:image" content="https://offbeat-lab.vercel.app/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2214%22 fill=%22%23F0149C%22/><path d=%22M62 12 L38 88%22 stroke=%22%23111114%22 stroke-width=%2214%22 stroke-linecap=%22round%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -488,10 +488,10 @@
       <button class="pol" data-p="cake" data-c="the cake"><img id="w3" alt="the cake"><div class="pc">THE CAKE</div></button>
       <button class="pol" data-p="kurta" data-c="the drip"><img id="w4" alt="the drip"><div class="pc">THE DRIP</div></button>
     </div>
-    <div id="introline">three games. one brand lab. <em>full send.</em></div>
+    <div id="introline">three games. one bold studio. <em>full send.</em></div>
     <div id="modebtns">
       <button id="cbbtn" class="hidden">🏁 THE COMEBACK<small>the closer to failure, the faster you go</small></button>
-      <button id="labsbtn">🧪 THE LAB<small>build a whole brand in 60 seconds</small></button>
+      <button id="labsbtn" class="hidden">🧪 THE LAB<small>build a whole brand in 60 seconds</small></button>
       <button id="startbtn">🏃 THE RUN</button>
       <button id="sharkbtn">🦈 SHARK MODE</button>
       <button id="simbtn">😎 CEO KI KURSI</button>
@@ -2623,6 +2623,9 @@ const LAB_RANKS = [
   [999,'CATEGORY CREATOR','aapne category bana di. ab baaki log aapko copy karenge. 🫡'],
 ];
 
+/* THE LAB is parked for now. flip LAB_HIDDEN to false and it is back:
+   the menu button un-hides, the shelf button returns, all the code below is intact. */
+const LAB_HIDDEN = true;
 const LAB = {on:false, i:0, t:60, timer:null, B:40, T:40, C:120, rerolls:3, daily:true,
   rnd:Math.random, brand:{}, cats:[], names:[], lines:[], stunts:[], attempt:1, rush:false,
   score:0, rank:'', signups:0, rec:null, view:null};
@@ -2889,7 +2892,7 @@ function labShelfAdd(rec){
 function labShelfBtn(){
   const n = labShelfGet().length, b = $('shelfbtn');
   if (!b) return;
-  b.classList.toggle('hidden', n === 0);
+  b.classList.toggle('hidden', n === 0 || LAB_HIDDEN);
   b.textContent = '🧊 your shelf (' + n + ')';
 }
 function labShelfOpen(){
@@ -3129,6 +3132,7 @@ function labDrawCard(rec){
 function labSlug(){
   return ((LAB.view && LAB.view.name) || 'brand').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
+$('labsbtn').classList.toggle('hidden', LAB_HIDDEN);
 $('labsbtn').addEventListener('click', () => { sfx.ui(); labStart(true); });
 $('labagain').addEventListener('click', () => { sfx.ui(); labStart(false); });
 $('shelfbtn').addEventListener('click', () => { sfx.ui(); labShelfOpen(); });

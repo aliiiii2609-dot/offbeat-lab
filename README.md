@@ -1,14 +1,11 @@
 # OFF/BEAT · the arcade 🏁
 
-A fan-made arcade tribute to OFF/BEAT Studios: three games and a brand lab. Cream, magenta, pixel Aman, and zero chill.
+A fan-made three-game arcade tribute to OFF/BEAT Studios. Cream, magenta, pixel Aman, and zero chill.
 
 **Play: https://offbeat-lab.vercel.app**
 
 ## The games
 
-- **🧪 THE LAB** — the marketing game. Six briefs, sixty seconds, one whole consumer brand: pick the shelf, generate the name, write the one line, choose the pack attitude, the go-to-market and the launch stunt. 🔥 BOLD and 🎨 TASTE pull against 💸 CAC, and lopsided brands get punished. You leave with a downloadable launch pack: pixel packaging, day-1 signups, and a shelf-test verdict from SHELF FILLER to CATEGORY CREATOR.
-  - **today's brief** is seeded by the date, so everyone in the country gets the same six briefs and the shared card is a comparison, not just a screenshot. Freestyle rolls a fresh brief any time.
-  - **your shelf** keeps your last twelve packs in local storage. Tap any one to reopen its card and save it again.
 - **🏃 THE RUN** — endless runner as the logo's slash. Jump over "9-5", "log kya kahenge", and "self doubt" blocks, collect ₹1 Cr coins and aman cards toward a ₹100 Cr seed round. 3 pixel-head lives, BASS MODE powerup.
 - **🦈 SHARK MODE** — judge 18 unhinged startup pitches (blockchain biryani, protein maggi) with I'M IN / I'M OUT under a shrinking timer. Build a portfolio, dodge the cap.
 - **😎 CEO KI KURSI** — Reigns-style card sim: one day in the boldest chair. Drag cards, balance 🔥 BOLD / 💰 CRORE / 🧘 CHILL, survive 15 meetings, seven endings.
@@ -23,5 +20,9 @@ A fan-made arcade tribute to OFF/BEAT Studios: three games and a brand lab. Crea
 
 
 Open `index.html`. That's the whole stack. `og-source.html` renders `og.png` (the link preview): serve the folder and screenshot it at 1200x630.
+
+## Parked
+
+- **🧪 THE LAB** (a 60-second brand-building game with a downloadable launch pack) and **🏁 THE COMEBACK** (a hoarding-city lane racer) are built and intact but hidden from the menu. Flip `LAB_HIDDEN` to `false` for the lab, or drop the `hidden` class on `#cbbtn` for the racer.
 
 *A fan tribute. Not affiliated with OFF/BEAT or Aman Gupta.*
