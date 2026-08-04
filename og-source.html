@@ -1,0 +1,124 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono&display=swap" rel="stylesheet">
+<style>html,body{margin:0;padding:0;overflow:hidden;background:#F2EFE6}canvas{display:block}</style>
+</head><body>
+<canvas id="c" width="1200" height="630"></canvas>
+<script>
+const g = document.getElementById('c').getContext('2d');
+const W = 1200, H = 630, INK = '#111114', PINK = '#F0149C', CREAM = '#FBF9F2';
+function notch(x, y, w, h){
+  const nx = w*0.028;
+  g.beginPath();
+  g.moveTo(x, y + h*0.14); g.lineTo(x + nx, y + h*0.14); g.lineTo(x + nx, y);
+  g.lineTo(x + w - nx, y); g.lineTo(x + w - nx, y + h*0.10); g.lineTo(x + w, y + h*0.10);
+  g.lineTo(x + w, y + h*0.86); g.lineTo(x + w - nx, y + h*0.86); g.lineTo(x + w - nx, y + h);
+  g.lineTo(x + w*0.04, y + h); g.lineTo(x + w*0.04, y + h*0.90); g.lineTo(x, y + h*0.90);
+  g.closePath();
+}
+/* one pixel pack, same block language as the lab */
+function pack(pal, kind, att){
+  const off = document.createElement('canvas');
+  off.width = 132; off.height = 168;
+  const p = off.getContext('2d');
+  const c1 = pal[0], c2 = pal[1];
+  const parts = {
+    can:    [['body',40,26,52,126,c1], ['lid',40,26,52,12,c2], ['tab',62,29,11,5,INK], ['rim',40,144,52,8,c2]],
+    stick:  [['body',46,20,40,132,c1], ['lid',46,20,40,13,c2], ['tear',44,36,44,3,INK]],
+    pouch:  [['crimp',30,22,72,11,c2], ['body',36,33,60,116,c1], ['spout',84,12,14,12,c2], ['foot',30,149,72,9,c2]],
+  }[kind];
+  p.fillStyle = INK;
+  for (const q of parts) p.fillRect(q[1]-3, q[2]-3, q[3]+6, q[4]+6);
+  for (const q of parts){ p.fillStyle = q[5]; p.fillRect(q[1], q[2], q[3], q[4]); }
+  const b = parts.find(q => q[0] === 'body');
+  const acc = c1.toUpperCase() === PINK ? INK : PINK;
+  p.save(); p.beginPath(); p.rect(b[1], b[2], b[3], b[4]); p.clip();
+  if (att === 'loud'){
+    p.fillStyle = acc;
+    for (let i = 0; i < 3; i++){ p.save(); p.translate(b[1]-10, b[2]+46+i*30); p.rotate(-0.34);
+      p.fillRect(0, 0, b[3]+40, 9); p.restore(); }
+  } else if (att === 'quiet'){
+    p.fillStyle = c2; p.fillRect(b[1], b[2]+b[4]-46, b[3], 20);
+    p.fillStyle = INK; p.fillRect(b[1]+8, b[2]+b[4]-20, b[3]-16, 3);
+  } else {
+    const ey = b[2]+62, ex = b[1]+b[3]/2;
+    p.fillStyle = CREAM; p.fillRect(ex-17, ey, 12, 14); p.fillRect(ex+5, ey, 12, 14);
+    p.fillStyle = INK; p.fillRect(ex-14, ey+6, 5, 5); p.fillRect(ex+8, ey+6, 5, 5);
+    p.fillRect(ex-10, ey+26, 20, 3);
+  }
+  const mx = b[1]+b[3]/2-14, my = b[2]+12;
+  p.fillStyle = acc; p.fillRect(mx, my, 28, 13);
+  p.strokeStyle = CREAM; p.lineWidth = 3;
+  p.beginPath(); p.moveTo(mx+18, my+2); p.lineTo(mx+10, my+11); p.stroke();
+  p.fillStyle = INK;
+  p.fillRect(b[1]+10, b[2]+b[4]-14, b[3]-20, 3);
+  p.fillRect(b[1]+10, b[2]+b[4]-8, (b[3]-20)*0.55, 3);
+  p.restore();
+  return off;
+}
+Promise.all([
+  document.fonts.load('400 96px "Archivo Black"'),
+  document.fonts.load('400 25px "Space Mono"'),
+]).then(() => {
+  g.fillStyle = '#F2EFE6'; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(17,17,20,.055)';
+  for (let y = 0; y < H; y += 7) for (let x = (y/7) % 2 ? 3.5 : 0; x < W; x += 7) g.fillRect(x, y, 2, 2);
+  g.strokeStyle = INK; g.lineWidth = 6; g.strokeRect(26, 26, W-52, H-52);
+
+  /* wordmark */
+  const tw = 520, th = 126, tx = 74, ty = 108;
+  g.fillStyle = PINK; notch(tx, ty, tw, th); g.fill();
+  g.font = '400 82px "Archivo Black", sans-serif';
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  let cx = tx + 42;
+  for (const part of ['OFF', '/', 'BEAT']){
+    g.fillStyle = part === '/' ? CREAM : INK;
+    g.fillText(part, cx, ty + th/2 + 29);
+    cx += g.measureText(part).width;
+  }
+  g.fillStyle = 'rgba(17,17,20,.62)';
+  g.font = '400 23px "Space Mono", monospace';
+  g.fillText('T H E   A R C A D E   ·   F A N   M A D E', tx + 6, ty + th + 52);
+  g.fillStyle = INK;
+  g.font = '400 58px "Archivo Black", sans-serif';
+  g.fillText('three games.', tx, 382);
+  g.fillText('one brand lab.', tx, 448);
+  g.fillStyle = PINK;
+  g.font = '400 36px "Archivo Black", sans-serif';
+  g.fillText('full send.', tx, 506);
+  g.fillStyle = 'rgba(17,17,20,.55)';
+  g.font = '400 21px "Space Mono", monospace';
+  g.fillText('build a whole consumer brand in 60 seconds,', tx, 552);
+  g.fillText('then take the pack home', tx, 580);
+
+  /* the new module, flagged */
+  const nw = 300, nh = 56, nx2 = 690, ny2 = 96;
+  g.fillStyle = PINK; notch(nx2, ny2, nw, nh); g.fill();
+  g.fillStyle = INK;
+  g.font = '400 30px "Archivo Black", sans-serif';
+  g.textAlign = 'center';
+  g.fillText('NEW · THE LAB', nx2 + nw/2, ny2 + 39);
+
+  /* the shelf of packs */
+  const packs = [
+    [['#7B5CFF','#FFC2E8'], 'can', 'loud'],
+    [['#F0149C','#FFE3A3'], 'stick', 'cursed'],
+    [['#1FA363','#DCF7C8'], 'pouch', 'quiet'],
+  ];
+  const S = 1.5, pw = 132*S, ph = 168*S;
+  g.imageSmoothingEnabled = false;
+  packs.forEach((p, i) => {
+    g.drawImage(pack(p[0], p[1], p[2]), 686 + i*148, 482 - ph, pw, ph);
+  });
+  g.imageSmoothingEnabled = true;
+  g.fillStyle = PINK; g.fillRect(688, 486, 440, 9);
+  g.fillStyle = INK; g.fillRect(680, 476, 440, 11);
+  g.fillStyle = 'rgba(17,17,20,.55)';
+  g.font = '400 20px "Space Mono", monospace';
+  g.textAlign = 'center';
+  g.fillText('your name · your line · your stunt', 900, 530);
+  g.fillText('then a pack you can actually post', 900, 562);
+  document.title = 'og-ready';
+});
+</script>
+</body></html>
